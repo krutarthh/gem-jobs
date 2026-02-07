@@ -1,0 +1,291 @@
+# Company watchlist: name and career page URL.
+# ATS (Greenhouse, Lever, Ashby) auto-detected from URL or page HTML when not set.
+# Set ats_type + board_id for custom domains that use Greenhouse/Ashby (reliable API fetch).
+companies:
+  # --- Fintech & payments ---
+  - name: Toast
+    careers_url: https://careers.toasttab.com/
+    ats_type: greenhouse
+    board_id: toast
+  - name: Stripe
+    careers_url: https://stripe.com/jobs
+    ats_type: greenhouse
+    board_id: stripe
+  - name: Ripple
+    careers_url: https://ripple.com/careers
+    ats_type: greenhouse
+    board_id: ripple
+  - name: Plaid
+    careers_url: https://plaid.com/careers/
+  - name: Coinbase
+    careers_url: https://www.coinbase.com/careers
+    ats_type: greenhouse
+    board_id: coinbase
+  - name: Robinhood
+    careers_url: https://careers.robinhood.com/
+    ats_type: greenhouse
+    board_id: robinhood
+  - name: Affirm
+    careers_url: https://www.affirm.com/careers
+    ats_type: greenhouse
+    board_id: affirm
+  - name: Block
+    careers_url: https://block.xyz/careers
+    ats_type: greenhouse
+    board_id: block
+  # --- Product & design ---
+  - name: Notion
+    careers_url: https://www.notion.so/careers
+    ats_type: ashby
+    board_id: notion
+  - name: Figma
+    careers_url: https://www.figma.com/careers/
+    ats_type: greenhouse
+    board_id: figma
+  - name: Linear
+    careers_url: https://linear.app/careers
+  - name: Airtable
+    careers_url: https://airtable.com/careers
+    ats_type: greenhouse
+    board_id: airtable
+  - name: Webflow
+    careers_url: https://webflow.com/careers/roles
+    ats_type: greenhouse
+    board_id: webflow
+  - name: Canva
+    careers_url: https://www.canva.com/careers/
+  - name: Asana
+    careers_url: https://asana.com/jobs
+    ats_type: greenhouse
+    board_id: asana
+  # --- Dev tools & infra ---
+  - name: Vercel
+    careers_url: https://vercel.com/careers
+    ats_type: greenhouse
+    board_id: vercel
+  - name: Supabase
+    careers_url: https://supabase.com/careers
+    ats_type: ashby
+    board_id: supabase
+  - name: Databricks
+    careers_url: https://www.databricks.com/company/careers
+    ats_type: greenhouse
+    board_id: databricks
+  - name: Snowflake
+    careers_url: https://careers.snowflake.com/
+  - name: Twilio
+    careers_url: https://www.twilio.com/company/jobs
+    ats_type: greenhouse
+    board_id: twilio
+  - name: HubSpot
+    careers_url: https://www.hubspot.com/company/careers
+    ats_type: greenhouse
+    board_id: hubspot
+  # --- AI & ML ---
+  - name: Anthropic
+    careers_url: https://www.anthropic.com/careers
+    ats_type: greenhouse
+    board_id: anthropic
+  - name: OpenAI
+    careers_url: https://openai.com/careers
+  - name: Scale AI
+    careers_url: https://scale.com/careers
+  - name: Hugging Face
+    careers_url: https://huggingface.co/jobs
+  # --- E‑commerce & marketplaces ---
+  - name: Shopify
+    careers_url: https://www.shopify.com/careers
+  - name: Airbnb
+    careers_url: https://careers.airbnb.com/
+    ats_type: greenhouse
+    board_id: airbnb
+  - name: DoorDash
+    careers_url: https://careers.doordash.com/
+  - name: Instacart
+    careers_url: https://www.instacart.com/careers
+    ats_type: greenhouse
+    board_id: instacart
+  # --- Mobility & gig ---
+  - name: Uber
+    careers_url: https://www.uber.com/us/en/careers/
+  - name: Lyft
+    careers_url: https://www.lyft.com/careers
+    ats_type: greenhouse
+    board_id: lyft
+  # --- Big tech (often Workday/custom; we still track URL) ---
+  - name: Google
+    careers_url: https://careers.google.com/jobs
+  - name: Meta
+    careers_url: https://www.metacareers.com/jobs
+  - name: Amazon
+    careers_url: https://www.amazon.jobs/
+  - name: Microsoft
+    careers_url: https://careers.microsoft.com/
+  - name: Apple
+    careers_url: https://jobs.apple.com/
+  - name: Netflix
+    careers_url: https://jobs.netflix.com/
+  - name: Spotify
+    careers_url: https://www.lifeatspotify.com/jobs
+  - name: Dropbox
+    careers_url: https://www.dropbox.com/jobs
+    ats_type: greenhouse
+    board_id: dropbox
+  # --- Security & enterprise ---
+  - name: Okta
+    careers_url: https://www.okta.com/company/careers/
+    ats_type: greenhouse
+    board_id: okta
+  - name: CrowdStrike
+    careers_url: https://www.crowdstrike.com/careers/
+  - name: Palo Alto Networks
+    careers_url: https://jobs.paloaltonetworks.com/
+  - name: Cloudflare
+    careers_url: https://www.cloudflare.com/careers/
+  # --- Canadian & Toronto-relevant ---
+  - name: Wealthsimple
+    careers_url: https://www.wealthsimple.com/careers
+  - name: Bench
+    careers_url: https://bench.co/careers/
+  - name: TouchBistro
+    careers_url: https://www.touchbistro.com/careers/
+  - name: Faire
+    careers_url: https://www.faire.com/careers
+  - name: Hootsuite
+    careers_url: https://www.hootsuite.com/careers
+  - name: Clio
+    careers_url: https://www.clio.com/careers/
+  - name: SkipTheDishes
+    careers_url: https://www.skipthedishes.com/careers
+  - name: ApplyBoard
+    careers_url: https://www.applyboard.com/careers
+  - name: Coveo
+    careers_url: https://www.coveo.com/en/company/careers
+  - name: Lightspeed
+    careers_url: https://www.lightspeed.com/careers/
+  - name: Kinaxis
+    careers_url: https://www.kinaxis.com/en/careers
+  - name: OpenText
+    careers_url: https://www.opentext.com/about/careers
+  # --- Startups & scale-ups ---
+  - name: Retool
+    careers_url: https://retool.com/careers
+  - name: Loom
+    careers_url: https://www.loom.com/careers
+  - name: Gong
+    careers_url: https://www.gong.io/careers
+  - name: Deel
+    careers_url: https://www.deel.com/careers
+  - name: Remote
+    careers_url: https://boards.greenhouse.io/remote
+  - name: Zapier
+    careers_url: https://zapier.com/jobs
+  - name: Cal.com
+    careers_url: https://cal.com/careers
+  - name: PostHog
+    careers_url: https://posthog.com/careers
+  - name: Sourcegraph
+    careers_url: https://sourcegraph.com/careers
+  - name: GitLab
+    careers_url: https://about.gitlab.com/jobs/
+  - name: HashiCorp
+    careers_url: https://www.hashicorp.com/careers
+  - name: Snyk
+    careers_url: https://snyk.io/careers/
+  - name: Grafana
+    careers_url: https://grafana.com/careers/
+  - name: Elastic
+    careers_url: https://www.elastic.co/careers
+  - name: MongoDB
+    careers_url: https://www.mongodb.com/careers
+  - name: Cockroach Labs
+    careers_url: https://www.cockroachlabs.com/careers/
+  - name: PlanetScale
+    careers_url: https://planetscale.com/careers
+  - name: Neon
+    careers_url: https://neon.tech/careers
+  - name: Replicate
+    careers_url: https://www.replicate.com/careers
+  - name: Runway
+    careers_url: https://www.runwayml.com/careers
+  - name: Perplexity
+    careers_url: https://www.perplexity.ai/careers
+  - name: Mistral AI
+    careers_url: https://mistral.ai/careers/
+  - name: Cohere
+    careers_url: https://cohere.com/careers
+  - name: Adept
+    careers_url: https://www.adept.ai/careers
+  - name: Character.ai
+    careers_url: https://character.ai/careers
+  - name: Glean
+    careers_url: https://glean.com/careers
+  - name: Cursor
+    careers_url: https://cursor.com/careers
+  - name: Replit
+    careers_url: https://replit.com/careers
+  - name: Codeium
+    careers_url: https://codeium.com/careers
+  - name: Tabnine
+    careers_url: https://www.tabnine.com/careers
+  - name: DeepMind
+    careers_url: https://www.deepmind.com/careers
+  - name: Cerebras
+    careers_url: https://www.cerebras.net/careers
+  - name: Lambda Labs
+    careers_url: https://lambdalabs.com/careers
+  - name: Together AI
+    careers_url: https://www.together.ai/careers
+
+# Filter defaults — new grad only; senior/staff/lead excluded; optional recency
+filters:
+  locations:
+    - Toronto
+    - Greater Toronto Area
+    - GTA
+    - Remote - Canada
+    - Ontario
+    - Remote
+  level_keywords:  # job must contain one of these (intern / new grad / entry-level)
+    - intern
+    - internship
+    - new grad
+    - new graduate
+    - SWE I
+    - Software Engineer I
+    - entry level
+    - entry-level
+  title_keywords:
+    - software
+    - backend
+    - full stack
+    - fullstack
+    - developer
+    - engineer
+  # Exclude any job whose title or department contains any of these (senior/staff/lead)
+  exclude_keywords:
+    - senior
+    - staff
+    - principal
+    - lead 
+    - architect
+    - director
+    - distinguished
+    - fellow
+    - head of
+    - vp 
+    - vice president
+    - sr.
+    - manager
+    - l5
+    - l6
+    - l7
+    - engineer ii
+    - engineer iii
+    - engineer 2
+    - engineer 3
+    - software engineer ii
+    - software engineer iii
+    - tech lead
+  # Only alert on jobs posted in the last N days (when ATS provides posted_at). 0 = off
+  max_days_since_posted: 30
