@@ -51,12 +51,20 @@ def load_filters() -> dict:
 def _default_filters() -> dict:
     return {
         "locations": [
+            "Canada",
             "Toronto",
             "Greater Toronto Area",
             "GTA",
-            "Remote - Canada",
             "Ontario",
-            "Remote",
+            "Remote - Canada",
+            "Vancouver",
+            "British Columbia",
+            "BC",
+            "Montreal",
+            "Quebec",
+            "Alberta",
+            "Calgary",
+            "Ottawa",
         ],
         "level_keywords": [
             "intern",

@@ -239,13 +239,27 @@ companies:
 
 # Filter defaults — new grad only; senior/staff/lead excluded; optional recency
 filters:
+  # Canada only — job location must contain one of these (no US/UK/other countries)
   locations:
+    - Canada
     - Toronto
     - Greater Toronto Area
     - GTA
-    - Remote - Canada
     - Ontario
-    - Remote
+    - Remote - Canada
+    - Vancouver
+    - British Columbia
+    - BC
+    - Montreal
+    - Quebec
+    - Alberta
+    - Calgary
+    - Ottawa
+    - Waterloo
+    - Manitoba
+    - Saskatchewan
+    - Nova Scotia
+    - Halifax
   level_keywords:  # job must contain one of these (intern / new grad / entry-level)
     - intern
     - internship
