@@ -5,6 +5,7 @@ Run once: python -m src.main
 
 import sys
 from datetime import datetime, timezone
+from urllib.parse import urlparse, urlunparse
 
 import requests
 
@@ -36,6 +37,31 @@ def _resolve_redirect(url: str) -> str:
         return r.url
     except requests.RequestException:
         return url
+
+
+def _normalize_external_id(external_id: str, job_url: str | None) -> str:
+    """
+    Return a stable external_id so the same job always maps to the same DB row.
+    - Numeric/opaque ids: use as-is (string).
+    - URL-based ids: strip query, fragment, trailing slash and lowercase so
+      https://x.com/job?ref=1 and https://x.com/job are the same.
+    """
+    s = (external_id or "").strip()
+    if not s and job_url:
+        s = (job_url or "").strip()
+    if not s:
+        return ""
+    # If it looks like a URL, canonicalize so we don't get duplicates from ?ref= etc.
+    if s.startswith("http://") or s.startswith("https://"):
+        try:
+            parsed = urlparse(s)
+            # scheme, netloc, path only; no query, fragment; path rstrip /
+            path = (parsed.path or "/").rstrip("/") or "/"
+            canonical = urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), path, "", "", ""))
+            return canonical
+        except Exception:
+            return s
+    return s
 
 
 def run_once() -> None:
@@ -84,10 +110,12 @@ def run_once() -> None:
         companies_checked += 1
         jobs = fetch_jobs_for_company(ats_type, board_id, careers_url)
         for j in jobs:
-            external_id = j.get("id")
-            if external_id is None:
-                external_id = j.get("url") or ""
-            external_id = str(external_id)
+            raw_id = j.get("id")
+            if raw_id is None:
+                raw_id = j.get("url") or ""
+            external_id = _normalize_external_id(str(raw_id).strip(), j.get("url"))
+            if not external_id:
+                continue
             posted_at = j.get("posted_at")
             if posted_at is not None:
                 posted_at = str(posted_at).strip() or None
@@ -112,8 +140,21 @@ def run_once() -> None:
         exclude_keywords=filters.get("exclude_keywords"),
         max_days_since_posted=filters.get("max_days_since_posted"),
     )
-    if filtered:
-        send_discord_new_jobs(filtered)
+    # Dedupe by (company, title, url) so we never send the same job twice in one run
+    seen_key: set[tuple[str, str, str]] = set()
+    deduped: list[dict] = []
+    for j in filtered:
+        key = (
+            (j.get("company_name") or "").strip(),
+            (j.get("title") or "").strip(),
+            (j.get("url") or "").strip(),
+        )
+        if key in seen_key:
+            continue
+        seen_key.add(key)
+        deduped.append(j)
+    if deduped:
+        send_discord_new_jobs(deduped)
     finish_run(run_id, companies_checked, new_count)
 
 

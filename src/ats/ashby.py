@@ -32,12 +32,14 @@ def fetch_jobs(client_name: str) -> list[JobDict]:
         loc = j.get("location") or j.get("locationName")
         if isinstance(loc, dict):
             loc = loc.get("name") or loc.get("value")
+        url = j.get("url") or j.get("applicationUrl") or j.get("jobUrl")
+        raw_id = j.get("id")
         out.append({
-            "id": j.get("id"),
+            "id": str(raw_id) if raw_id is not None else url,
             "title": j.get("title"),
             "location": loc,
             "department": j.get("department"),
-            "url": j.get("url") or j.get("applicationUrl") or j.get("jobUrl"),
+            "url": url,
             "posted_at": j.get("publishedAt") or j.get("createdAt"),
         })
     return out

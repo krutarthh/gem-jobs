@@ -30,12 +30,14 @@ def fetch_jobs(company_slug: str) -> list[JobDict]:
             department = cats.get("department")
         else:
             location = department = None
+        url = j.get("hostedUrl") or j.get("applyUrl")
+        raw_id = j.get("id")
         out.append({
-            "id": j.get("id"),
+            "id": str(raw_id) if raw_id is not None else url,
             "title": j.get("text"),
             "location": location,
             "department": department,
-            "url": j.get("hostedUrl") or j.get("applyUrl"),
+            "url": url,
             "posted_at": j.get("createdAt"),
         })
     return out
