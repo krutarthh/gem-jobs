@@ -39,13 +39,24 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run scraper
+        id: scrape
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python -m src.main
 
-      # Save DB so next run restores it (same key = cache updated; no duplicate DMs)
+      - name: Compact DB before cache (smaller = more reliable save)
+        if: success()
+        run: |
+          if [ -f data/jobs.db ]; then
+            sqlite3 data/jobs.db "VACUUM;" 2>/dev/null || true
+            du -sh data/
+          fi
+
+      # Save DB so next run restores it. Uses same key as restore so cache updates.
       - name: Save job DB cache
+        if: success()
         uses: actions/cache/save@v4
+        continue-on-error: true
         with:
           path: data
           key: gold-gem-jobs-db
