@@ -20,12 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Restore latest DB: prefix match so we get the most recent save (avoids "another job may be creating this cache")
       - name: Restore job DB cache
         id: restore-cache
         uses: actions/cache/restore@v4
         with:
           path: data
-          key: gold-gem-jobs-db
+          key: gold-gem-jobs-db-${{ github.run_id }}
+          restore-keys: |
+            gold-gem-jobs-db-
 
       - name: Log cache restore result
         run: |
@@ -80,38 +83,19 @@ jobs:
           fi
           echo "::endgroup::"
 
-      # Cache save can fail randomly (GitHub infra). We retry once and never fail the job.
+      # Save with unique key per run so we never conflict with "another job may be creating this cache"
       - name: Save job DB cache
         id: save-cache
         if: success()
         uses: actions/cache/save@v4
-        continue-on-error: true
         with:
           path: data
-          key: gold-gem-jobs-db
+          key: gold-gem-jobs-db-${{ github.run_id }}
 
-      - name: Save job DB cache (retry)
-        id: save-cache-retry
-        if: success() && steps.save-cache.outcome == 'failure'
-        uses: actions/cache/save@v4
-        continue-on-error: true
-        with:
-          path: data
-          key: gold-gem-jobs-db
-
-      - name: Cache save summary (root cause hints)
+      - name: Cache save summary
         if: always()
         run: |
-          echo "::group::Cache save summary"
-          echo "Restore: cache-hit=${{ steps.restore-cache.outputs.cache-hit }}, key=${{ steps.restore-cache.outputs.cache-primary-key }}"
-          echo "Save (first): outcome=${{ steps.save-cache.outcome }}"
-          echo "Save (retry): outcome=${{ steps.save-cache-retry.outcome }}"
-          if [ "${{ steps.save-cache.outcome }}" = "failure" ] || [ "${{ steps.save-cache-retry.outcome }}" = "failure" ]; then
-            echo ""
-            echo "--- Cache save failed. Common causes ---"
-            echo "1. Repo cache limit (10GB total): Settings -> Actions -> Caches, delete old caches"
-            echo "2. Single cache entry limit or upload timeout: DB may be large; prune/compact ran above"
-            echo "3. GitHub cache service transient error: retry ran; next run may succeed"
-            echo "4. See the 'Save job DB cache' step above for the actual error message"
-          fi
+          echo "::group::Cache summary"
+          echo "Restore: cache-hit=${{ steps.restore-cache.outputs.cache-hit }}, matched-key=${{ steps.restore-cache.outputs.cache-matched-key }}"
+          echo "Save: outcome=${{ steps.save-cache.outcome }}, key=gold-gem-jobs-db-${{ github.run_id }}"
           echo "::endgroup::"
