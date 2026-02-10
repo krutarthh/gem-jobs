@@ -27,6 +27,20 @@ jobs:
           path: data
           key: gold-gem-jobs-db
 
+      - name: Log cache restore result
+        run: |
+          echo "::group::Cache restore diagnostics"
+          echo "cache-hit: ${{ steps.restore-cache.outputs.cache-hit }}"
+          echo "cache-primary-key: ${{ steps.restore-cache.outputs.cache-primary-key }}"
+          echo "cache-matched-key: ${{ steps.restore-cache.outputs.cache-matched-key }}"
+          if [ -f data/jobs.db ]; then
+            echo "jobs.db exists after restore; size: $(du -h data/jobs.db | cut -f1)"
+            echo "job count: $(sqlite3 data/jobs.db 'SELECT COUNT(*) FROM jobs;' 2>/dev/null || echo '?')"
+          else
+            echo "jobs.db missing after restore (first run or cache miss)"
+          fi
+          echo "::endgroup::"
+
       - name: Create data dir if missing
         run: mkdir -p data
 
@@ -51,8 +65,20 @@ jobs:
           if [ -f data/jobs.db ]; then
             sqlite3 data/jobs.db "DELETE FROM jobs WHERE last_seen_at < datetime('now', '-90 days');" 2>/dev/null || true
             sqlite3 data/jobs.db "VACUUM;" 2>/dev/null || true
-            du -sh data/
           fi
+
+      - name: Log state before cache save
+        if: success()
+        run: |
+          echo "::group::Pre-save diagnostics"
+          echo "data/ contents:"
+          ls -la data/ 2>/dev/null || true
+          echo "data/ size: $(du -sh data/ 2>/dev/null | cut -f1 || echo 'N/A')"
+          if [ -f data/jobs.db ]; then
+            echo "jobs.db size: $(du -h data/jobs.db | cut -f1)"
+            echo "jobs count: $(sqlite3 data/jobs.db 'SELECT COUNT(*) FROM jobs;' 2>/dev/null || echo '?')"
+          fi
+          echo "::endgroup::"
 
       # Cache save can fail randomly (GitHub infra). We retry once and never fail the job.
       - name: Save job DB cache
@@ -65,9 +91,27 @@ jobs:
           key: gold-gem-jobs-db
 
       - name: Save job DB cache (retry)
+        id: save-cache-retry
         if: success() && steps.save-cache.outcome == 'failure'
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
           path: data
           key: gold-gem-jobs-db
+
+      - name: Cache save summary (root cause hints)
+        if: always()
+        run: |
+          echo "::group::Cache save summary"
+          echo "Restore: cache-hit=${{ steps.restore-cache.outputs.cache-hit }}, key=${{ steps.restore-cache.outputs.cache-primary-key }}"
+          echo "Save (first): outcome=${{ steps.save-cache.outcome }}"
+          echo "Save (retry): outcome=${{ steps.save-cache-retry.outcome }}"
+          if [ "${{ steps.save-cache.outcome }}" = "failure" ] || [ "${{ steps.save-cache-retry.outcome }}" = "failure" ]; then
+            echo ""
+            echo "--- Cache save failed. Common causes ---"
+            echo "1. Repo cache limit (10GB total): Settings -> Actions -> Caches, delete old caches"
+            echo "2. Single cache entry limit or upload timeout: DB may be large; prune/compact ran above"
+            echo "3. GitHub cache service transient error: retry ran; next run may succeed"
+            echo "4. See the 'Save job DB cache' step above for the actual error message"
+          fi
+          echo "::endgroup::"
