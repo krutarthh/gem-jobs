@@ -5,9 +5,13 @@ name: Run scraper every 15 min
 
 on:
   schedule:
-    # Every 15 minutes (UTC)
     - cron: '*/15 * * * *'
-  workflow_dispatch:  # Allow manual run from Actions tab
+  workflow_dispatch:
+
+# Prevent overlapping runs: only one at a time; new run cancels the previous
+concurrency:
+  group: scraper
+  cancel-in-progress: true
 
 jobs:
   scrape:
@@ -16,8 +20,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache job DB
-        uses: actions/cache@v4
+      - name: Restore job DB cache
+        id: restore-cache
+        uses: actions/cache/restore@v4
         with:
           path: data
           key: gold-gem-jobs-db
@@ -37,3 +42,10 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python -m src.main
+
+      # Save DB so next run restores it (same key = cache updated; no duplicate DMs)
+      - name: Save job DB cache
+        uses: actions/cache/save@v4
+        with:
+          path: data
+          key: gold-gem-jobs-db
