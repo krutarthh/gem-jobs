@@ -44,17 +44,28 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python -m src.main
 
-      - name: Compact DB before cache (smaller = more reliable save)
+      # Keep DB small: prune old jobs (90 days), then compact. Smaller DB = fewer random cache save failures.
+      - name: Prune and compact DB before cache
         if: success()
         run: |
           if [ -f data/jobs.db ]; then
+            sqlite3 data/jobs.db "DELETE FROM jobs WHERE last_seen_at < datetime('now', '-90 days');" 2>/dev/null || true
             sqlite3 data/jobs.db "VACUUM;" 2>/dev/null || true
             du -sh data/
           fi
 
-      # Save DB so next run restores it. Uses same key as restore so cache updates.
+      # Cache save can fail randomly (GitHub infra). We retry once and never fail the job.
       - name: Save job DB cache
+        id: save-cache
         if: success()
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: data
+          key: gold-gem-jobs-db
+
+      - name: Save job DB cache (retry)
+        if: success() && steps.save-cache.outcome == 'failure'
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
