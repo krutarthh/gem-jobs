@@ -237,6 +237,57 @@ companies:
   - name: Together AI
     careers_url: https://www.together.ai/careers
 
+  # --- More Canadian fintech & tech ---
+  - name: KOHO
+    careers_url: https://www.koho.ca/careers/
+  - name: Neo Financial
+    careers_url: https://www.neofinancial.com/company/careers
+  - name: Borrowell
+    careers_url: https://www.borrowell.com/careers
+  - name: Clearco
+    careers_url: https://clear.co/careers
+  - name: Hopper
+    careers_url: https://hopper.com/careers
+  - name: Vendasta
+    careers_url: https://www.vendasta.com/company/careers
+  - name: Properly
+    careers_url: https://www.properly.ca/careers
+  - name: Ada
+    careers_url: https://www.ada.cx/company/careers
+  - name: League
+    careers_url: https://league.com/careers
+  - name: Wave
+    careers_url: https://www.waveapps.com/careers
+  - name: BenchSci
+    careers_url: https://www.benchsci.com/careers
+  - name: Top Hat
+    careers_url: https://tophat.com/company/careers
+  - name: Tulip
+    careers_url: https://www.tulip.com/company/careers/
+
+  # --- More global infra & analytics ---
+  - name: Palantir
+    careers_url: https://www.palantir.com/careers/
+  - name: Datadog
+    careers_url: https://www.datadoghq.com/careers/
+  - name: Atlassian
+    careers_url: https://www.atlassian.com/company/careers
+  - name: New Relic
+    careers_url: https://newrelic.com/about/careers
+  - name: Fastly
+    careers_url: https://www.fastly.com/careers
+  - name: CircleCI
+    careers_url: https://circleci.com/careers/
+  - name: Segment
+    careers_url: https://segment.com/careers/
+  - name: Datadog
+    careers_url: https://www.datadoghq.com/careers/
+  - name: PagerDuty
+    careers_url: https://careers.pagerduty.com/
+  - name: Twilio Segment
+    careers_url: https://segment.com/careers/
+
+
 # Filter defaults — new grad only; senior/staff/lead excluded; optional recency
 filters:
   # Canada only — job location must contain one of these (no US/UK/other countries)
