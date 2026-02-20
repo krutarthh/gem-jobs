@@ -280,13 +280,38 @@ companies:
     careers_url: https://circleci.com/careers/
   - name: Segment
     careers_url: https://segment.com/careers/
-  - name: Datadog
-    careers_url: https://www.datadoghq.com/careers/
   - name: PagerDuty
     careers_url: https://careers.pagerduty.com/
-  - name: Twilio Segment
-    careers_url: https://segment.com/careers/
 
+  # --- US / global hiring in Canada (SWE new grad) ---
+  - name: Confluent
+    careers_url: https://careers.confluent.io/
+  - name: Intuit
+    careers_url: https://jobs.intuit.com/
+  - name: Autodesk
+    careers_url: https://www.autodesk.com/careers/
+  - name: Veeva
+    careers_url: https://careers.veeva.com/
+  - name: Ciena
+    careers_url: https://www.ciena.com/careers/
+  - name: ServiceNow
+    careers_url: https://careers.servicenow.com/
+  - name: Splunk
+    careers_url: https://www.splunk.com/en_us/careers.html
+  - name: Pure Storage
+    careers_url: https://www.purestorage.com/company/careers.html
+  - name: Nutanix
+    careers_url: https://www.nutanix.com/company/careers
+  - name: Rubrik
+    careers_url: https://www.rubrik.com/company/careers
+  - name: Fortinet
+    careers_url: https://www.fortinet.com/careers
+  - name: Quora
+    careers_url: https://www.quora.com/careers
+  - name: IXL Learning
+    careers_url: https://www.ixl.com/company/careers
+  - name: Zip
+    careers_url: https://www.zip.co/careers/
 
 # Filter defaults — new grad only; senior/staff/lead excluded; optional recency
 filters:
