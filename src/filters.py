@@ -1,8 +1,21 @@
 """Filter jobs by location, new-grad level, keywords; exclude senior roles; optional recency."""
 
+import json
 import unicodedata
+from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Any
+
+# #region agent log
+_DEBUG_LOG_PATH = str(Path(__file__).resolve().parent.parent / ".cursor" / "debug-cad17e.log")
+def _debug_log(session_id: str, location: str, message: str, data: dict, hypothesis_id: str, run_id: str = "run1") -> None:
+    try:
+        payload = {"sessionId": session_id, "runId": run_id, "hypothesisId": hypothesis_id, "location": location, "message": message, "data": data, "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000)}
+        with open(_DEBUG_LOG_PATH, "a") as f:
+            f.write(json.dumps(payload) + "\n")
+    except Exception:
+        pass
+# #endregion
 
 # Default: reject if title/department contains any of these (senior/staff/lead)
 DEFAULT_EXCLUDE_KEYWORDS = [
@@ -16,6 +29,10 @@ DEFAULT_EXCLUDE_KEYWORDS = [
 
 def _normalize(s: str | None | Any) -> str:
     """Normalize for matching: strip, lower, and remove accents (e.g. Montréal -> montreal)."""
+    # #region agent log
+    if s is not None and not isinstance(s, str):
+        _debug_log("cad17e", "filters.py:_normalize", "non-str value passed to _normalize", {"type": type(s).__name__, "repr": repr(s)}, "B")
+    # #endregion
     if s is None:
         return ""
     if not isinstance(s, str):
@@ -50,6 +67,11 @@ def _location_to_string(location: Any) -> str:
 
 
 def _matches_any(text: str, keywords: list[str]) -> bool:
+    # #region agent log
+    non_str = [(i, type(k).__name__, repr(k)) for i, k in enumerate(keywords) if not isinstance(k, str)]
+    if non_str:
+        _debug_log("cad17e", "filters.py:_matches_any", "keywords contained non-str entries", {"indices_and_types": non_str, "total_keywords": len(keywords)}, "A")
+    # #endregion
     if not keywords:
         return True
     t = _normalize(text)
@@ -144,6 +166,11 @@ def filter_jobs(
     require_location_field_match: bool = False,
 ) -> list[dict[str, Any]]:
     """Return only jobs that pass all filters (new-grad only, no senior, optional recency)."""
+    # #region agent log
+    loc_types = [type(x).__name__ for x in locations]
+    non_str_idx = [i for i, x in enumerate(locations) if not isinstance(x, str)]
+    _debug_log("cad17e", "filters.py:filter_jobs", "locations list types", {"types": loc_types, "non_str_indices": non_str_idx, "len": len(locations)}, "A")
+    # #endregion
     return [
         j
         for j in jobs
