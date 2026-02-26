@@ -117,7 +117,12 @@ Filters are defined in `config/watchlist.yaml` under `filters`:
 - **level_keywords** — Title or department must contain one of these (e.g. intern, new grad, SWE I).
 - **title_keywords** — If non-empty, title or department must contain one of these (e.g. software, backend).
 
-Only jobs passing all three are included in Discord alerts.
+Optional filter flags (under `filters` in the YAML):
+
+- **allow_empty_location** (default: false) — If true, jobs with no location (e.g. from the generic scraper) pass the location check instead of being excluded.
+- **require_location_field_match** (default: false) — If true, at least one location keyword must appear in the job’s location field (not only in title/department).
+
+Only jobs passing all filters are included in Discord alerts.
 
 ## Project layout
 

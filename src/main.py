@@ -139,6 +139,8 @@ def run_once() -> None:
         title_keywords=filters["title_keywords"],
         exclude_keywords=filters.get("exclude_keywords"),
         max_days_since_posted=filters.get("max_days_since_posted"),
+        allow_empty_location=filters.get("allow_empty_location", False),
+        require_location_field_match=filters.get("require_location_field_match", False),
     )
     # Dedupe by (company, title, url) so we never send the same job twice in one run
     seen_key: set[tuple[str, str, str]] = set()

@@ -1,5 +1,6 @@
 """Filter jobs by location, new-grad level, keywords; exclude senior roles; optional recency."""
 
+import unicodedata
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
@@ -14,9 +15,36 @@ DEFAULT_EXCLUDE_KEYWORDS = [
 
 
 def _normalize(s: str | None) -> str:
+    """Normalize for matching: strip, lower, and remove accents (e.g. Montréal -> montreal)."""
     if s is None:
         return ""
-    return (s or "").strip().lower()
+    t = (s or "").strip().lower()
+    # NFD and drop combining characters so accents don't block matches
+    nfd = unicodedata.normalize("NFD", t)
+    return "".join(c for c in nfd if unicodedata.category(c) != "Mn")
+
+
+def _location_to_string(location: Any) -> str:
+    """
+    Normalize job location to a single string for matching.
+    Jobs may have location as: str, list of str (multiple locations), or dict (e.g. {"name": "..."}).
+    We merge all into one string so Canada/Toronto matching works when a job has multiple locations.
+    """
+    if location is None:
+        return ""
+    if isinstance(location, list):
+        parts = []
+        for item in location:
+            if isinstance(item, dict):
+                parts.append(item.get("name") or item.get("location") or item.get("value") or "")
+            elif item is not None and str(item).strip():
+                parts.append(str(item).strip())
+        return " ".join(parts)
+    if isinstance(location, dict):
+        return (
+            (location.get("name") or location.get("location") or location.get("value")) or ""
+        ).strip()
+    return (str(location) or "").strip()
 
 
 def _matches_any(text: str, keywords: list[str]) -> bool:
@@ -57,22 +85,33 @@ def passes_filters(
     title_keywords: list[str],
     exclude_keywords: list[str] | None = None,
     max_days_since_posted: int | None = None,
+    allow_empty_location: bool = False,
+    require_location_field_match: bool = False,
 ) -> bool:
     """
     Return True if job passes all filters (new-grad only, no senior/staff, optional recency).
-    - Location: title/location/department contains one of locations
+    - Location: title/location/department contains one of locations (location can be str or list of
+      locations; multiple locations are merged so e.g. Canada/Toronto is matched if any location matches).
+      If allow_empty_location is True, missing/empty location is treated as passing the location check.
+      If require_location_field_match is True, the job's location field must also contain a location keyword.
     - Level: title or department contains one of level_keywords (intern, new grad, SWE I, etc.)
     - Keywords: title or department contains one of title_keywords
     - Exclude: title or department must NOT contain any of exclude_keywords (senior, staff, etc.)
     - Recency: if max_days_since_posted set and job has posted_at, reject if older than that
     """
     title = _normalize(job.get("title") or "")
-    location = _normalize(job.get("location") or "")
+    location_str = _location_to_string(job.get("location"))
+    location = _normalize(location_str)
     department = _normalize(job.get("department") or "")
     combined = f"{title} {location} {department}"
     title_dept = f"{title} {department}"
 
-    if not _matches_any(combined, locations):
+    # Location check: combined text or (if allow_empty_location) empty location passes
+    if allow_empty_location and not location_str.strip():
+        pass  # treat empty location as passing
+    elif not _matches_any(combined, locations):
+        return False
+    if require_location_field_match and location_str.strip() and not _matches_any(location_str, locations):
         return False
     if not _matches_any(title_dept, level_keywords):
         return False
@@ -99,6 +138,8 @@ def filter_jobs(
     title_keywords: list[str],
     exclude_keywords: list[str] | None = None,
     max_days_since_posted: int | None = None,
+    allow_empty_location: bool = False,
+    require_location_field_match: bool = False,
 ) -> list[dict[str, Any]]:
     """Return only jobs that pass all filters (new-grad only, no senior, optional recency)."""
     return [
@@ -111,5 +152,7 @@ def filter_jobs(
             title_keywords,
             exclude_keywords=exclude_keywords,
             max_days_since_posted=max_days_since_posted,
+            allow_empty_location=allow_empty_location,
+            require_location_field_match=require_location_field_match,
         )
     ]

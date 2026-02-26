@@ -45,6 +45,8 @@ def load_filters() -> dict:
         "title_keywords": filters.get("title_keywords", defaults["title_keywords"]),
         "exclude_keywords": filters.get("exclude_keywords", defaults["exclude_keywords"]),
         "max_days_since_posted": filters.get("max_days_since_posted", defaults["max_days_since_posted"]),
+        "allow_empty_location": filters.get("allow_empty_location", defaults["allow_empty_location"]),
+        "require_location_field_match": filters.get("require_location_field_match", defaults["require_location_field_match"]),
     }
 
 
@@ -56,12 +58,14 @@ def _default_filters() -> dict:
             "Greater Toronto Area",
             "GTA",
             "Ontario",
+            "ON",
             "Remote - Canada",
             "Vancouver",
             "British Columbia",
             "BC",
             "Montreal",
             "Quebec",
+            "QC",
             "Alberta",
             "Calgary",
             "Ottawa",
@@ -91,4 +95,6 @@ def _default_filters() -> dict:
             "software engineer ii", "software engineer iii", "tech lead",
         ],
         "max_days_since_posted": 30,
+        "allow_empty_location": False,
+        "require_location_field_match": False,
     }

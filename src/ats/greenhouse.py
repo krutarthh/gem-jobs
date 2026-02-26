@@ -12,9 +12,10 @@ JobDict = dict[str, Any]
 def fetch_jobs(board_token: str) -> list[JobDict]:
     """
     Fetch all jobs for a Greenhouse board.
-    GET https://boards-api.greenhouse.io/v1/boards/<board_token>/jobs
+    Uses content=true to get offices array so we include every location (multi-location jobs).
+    GET https://boards-api.greenhouse.io/v1/boards/<board_token>/jobs?content=true
     """
-    url = f"https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs"
+    url = f"https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs?content=true"
     try:
         r = requests.get(url, timeout=TIMEOUT)
         r.raise_for_status()
@@ -24,8 +25,31 @@ def fetch_jobs(board_token: str) -> list[JobDict]:
     jobs = data.get("jobs") or []
     out: list[JobDict] = []
     for j in jobs:
+        # Merge all locations: main location + every office (name + location) for multi-location jobs
+        location_parts: list[str] = []
         loc = j.get("location") or {}
-        location_name = loc.get("name") if isinstance(loc, dict) else str(loc) if loc else None
+        if isinstance(loc, dict) and loc.get("name"):
+            location_parts.append(str(loc["name"]).strip())
+        elif loc and not isinstance(loc, dict):
+            location_parts.append(str(loc).strip())
+        for office in j.get("offices") or []:
+            if not isinstance(office, dict):
+                continue
+            if office.get("name"):
+                location_parts.append(str(office["name"]).strip())
+            if office.get("location"):
+                location_parts.append(str(office["location"]).strip())
+        # Dedupe by normalized form (first occurrence wins)
+        seen: set[str] = set()
+        unique = []
+        for p in location_parts:
+            if not p:
+                continue
+            k = p.lower().strip()
+            if k not in seen:
+                seen.add(k)
+                unique.append(p)
+        location_name = " | ".join(unique) or None
         departments = j.get("departments")
         department = None
         if departments and isinstance(departments, list) and len(departments) > 0:

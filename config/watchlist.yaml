@@ -316,18 +316,21 @@ companies:
 # Filter defaults — new grad only; senior/staff/lead excluded; optional recency
 filters:
   # Canada only — job location must contain one of these (no US/UK/other countries)
+  # ON/QC = province abbreviations (e.g. Toronto, ON; Montreal, QC). QC can rarely mean "quality control" in titles.
   locations:
     - Canada
     - Toronto
     - Greater Toronto Area
     - GTA
     - Ontario
+    - ON
     - Remote - Canada
     - Vancouver
     - British Columbia
     - BC
     - Montreal
     - Quebec
+    - QC
     - Alberta
     - Calgary
     - Ottawa

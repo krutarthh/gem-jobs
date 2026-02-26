@@ -28,10 +28,41 @@ def fetch_jobs(client_name: str) -> list[JobDict]:
     for j in jobs:
         if not isinstance(j, dict):
             continue
-        # Ashby job shape: id, title, location, department, etc.
+        # Ashby: primary location + secondaryLocations (multi-location jobs)
         loc = j.get("location") or j.get("locationName")
-        if isinstance(loc, dict):
-            loc = loc.get("name") or loc.get("value")
+        location_parts: list[str] = []
+        if isinstance(loc, list):
+            for x in loc:
+                if isinstance(x, dict):
+                    p = x.get("name") or x.get("location") or x.get("value")
+                    if p is not None and str(p).strip():
+                        location_parts.append(str(p).strip())
+                elif x is not None and str(x).strip():
+                    location_parts.append(str(x).strip())
+        elif isinstance(loc, dict):
+            p = loc.get("name") or loc.get("value")
+            if p:
+                location_parts.append(str(p).strip())
+        elif loc:
+            location_parts.append(str(loc).strip())
+        for sec in j.get("secondaryLocations") or []:
+            if isinstance(sec, dict):
+                s = sec.get("location") or sec.get("name") or sec.get("value")
+            else:
+                s = sec
+            if s and str(s).strip():
+                location_parts.append(str(s).strip())
+        # Dedupe by normalized form (first occurrence wins)
+        seen: set[str] = set()
+        unique = []
+        for p in location_parts:
+            if not p:
+                continue
+            k = p.lower().strip()
+            if k not in seen:
+                seen.add(k)
+                unique.append(p)
+        loc = " | ".join(unique) if unique else None
         url = j.get("url") or j.get("applicationUrl") or j.get("jobUrl")
         raw_id = j.get("id")
         out.append({
