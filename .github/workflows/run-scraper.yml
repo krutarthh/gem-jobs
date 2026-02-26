@@ -20,15 +20,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Restore latest DB: prefix match so we get the most recent save (avoids "another job may be creating this cache")
+      # Single stable key: restore and save the same cache so we update it each run instead of creating a new one.
+      # Concurrency (cancel-in-progress) ensures only one run at a time, so no conflict on save.
       - name: Restore job DB cache
         id: restore-cache
         uses: actions/cache/restore@v4
         with:
           path: data
-          key: gold-gem-jobs-db-${{ github.run_id }}
-          restore-keys: |
-            gold-gem-jobs-db-
+          key: gold-gem-jobs-db
 
       - name: Log cache restore result
         run: |
@@ -83,19 +82,18 @@ jobs:
           fi
           echo "::endgroup::"
 
-      # Save with unique key per run so we never conflict with "another job may be creating this cache"
       - name: Save job DB cache
         id: save-cache
         if: success()
         uses: actions/cache/save@v4
         with:
           path: data
-          key: gold-gem-jobs-db-${{ github.run_id }}
+          key: gold-gem-jobs-db
 
       - name: Cache save summary
         if: always()
         run: |
           echo "::group::Cache summary"
           echo "Restore: cache-hit=${{ steps.restore-cache.outputs.cache-hit }}, matched-key=${{ steps.restore-cache.outputs.cache-matched-key }}"
-          echo "Save: outcome=${{ steps.save-cache.outcome }}, key=gold-gem-jobs-db-${{ github.run_id }}"
+          echo "Save: outcome=${{ steps.save-cache.outcome }}, key=gold-gem-jobs-db"
           echo "::endgroup::"
