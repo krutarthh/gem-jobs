@@ -39,11 +39,26 @@ def load_filters() -> dict:
         data = yaml.safe_load(f) or {}
     filters = data.get("filters", {})
     defaults = _default_filters()
+
+    def _ensure_str_list(raw: list, default: list) -> list:
+        out = []
+        for x in raw if isinstance(raw, list) else default:
+            if isinstance(x, str):
+                out.append(x)
+            elif x is True:
+                out.append("ON")  # YAML parses unquoted "ON" as bool True
+            elif x is False:
+                out.append("OFF")
+            else:
+                out.append(str(x))
+        return out
+
+    locs = filters.get("locations", defaults["locations"])
     return {
-        "locations": filters.get("locations", defaults["locations"]),
-        "level_keywords": filters.get("level_keywords", defaults["level_keywords"]),
-        "title_keywords": filters.get("title_keywords", defaults["title_keywords"]),
-        "exclude_keywords": filters.get("exclude_keywords", defaults["exclude_keywords"]),
+        "locations": _ensure_str_list(locs, defaults["locations"]),
+        "level_keywords": _ensure_str_list(filters.get("level_keywords", defaults["level_keywords"]), defaults["level_keywords"]),
+        "title_keywords": _ensure_str_list(filters.get("title_keywords", defaults["title_keywords"]), defaults["title_keywords"]),
+        "exclude_keywords": _ensure_str_list(filters.get("exclude_keywords", defaults["exclude_keywords"]), defaults["exclude_keywords"]),
         "max_days_since_posted": filters.get("max_days_since_posted", defaults["max_days_since_posted"]),
         "allow_empty_location": filters.get("allow_empty_location", defaults["allow_empty_location"]),
         "require_location_field_match": filters.get("require_location_field_match", defaults["require_location_field_match"]),

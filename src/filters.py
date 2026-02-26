@@ -29,14 +29,14 @@ DEFAULT_EXCLUDE_KEYWORDS = [
 
 def _normalize(s: str | None | Any) -> str:
     """Normalize for matching: strip, lower, and remove accents (e.g. Montréal -> montreal)."""
-    # #region agent log
-    if s is not None and not isinstance(s, str):
-        _debug_log("cad17e", "filters.py:_normalize", "non-str value passed to _normalize", {"type": type(s).__name__, "repr": repr(s)}, "B")
-    # #endregion
     if s is None:
         return ""
     if not isinstance(s, str):
-        s = str(s)  # YAML can give bool for e.g. "ON" (parsed as true)
+        s = "ON" if s is True else "OFF" if s is False else str(s)  # YAML parses unquoted ON/off as bool
+    # #region agent log
+    if s and not isinstance(s, str):
+        _debug_log("cad17e", "filters.py:_normalize", "non-str value passed to _normalize", {"type": type(s).__name__, "repr": repr(s)}, "B")
+    # #endregion
     t = (s or "").strip().lower()
     # NFD and drop combining characters so accents don't block matches
     nfd = unicodedata.normalize("NFD", t)
