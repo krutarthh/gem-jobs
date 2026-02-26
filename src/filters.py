@@ -14,10 +14,12 @@ DEFAULT_EXCLUDE_KEYWORDS = [
 ]
 
 
-def _normalize(s: str | None) -> str:
+def _normalize(s: str | None | Any) -> str:
     """Normalize for matching: strip, lower, and remove accents (e.g. Montréal -> montreal)."""
     if s is None:
         return ""
+    if not isinstance(s, str):
+        s = str(s)  # YAML can give bool for e.g. "ON" (parsed as true)
     t = (s or "").strip().lower()
     # NFD and drop combining characters so accents don't block matches
     nfd = unicodedata.normalize("NFD", t)

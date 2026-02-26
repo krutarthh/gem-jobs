@@ -323,14 +323,14 @@ filters:
     - Greater Toronto Area
     - GTA
     - Ontario
-    - ON
+    - "ON"   # quoted: unquoted ON is parsed as boolean true in YAML
     - Remote - Canada
     - Vancouver
     - British Columbia
     - BC
     - Montreal
     - Quebec
-    - QC
+    - "QC"   # quoted for clarity (QC is always string in YAML)
     - Alberta
     - Calgary
     - Ottawa
