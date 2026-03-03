@@ -339,8 +339,8 @@ filters:
     - Saskatchewan
     - Nova Scotia
     - Halifax
+    - Remote - Canada
   level_keywords:  # job must contain one of these (intern / new grad / entry-level)
-    - intern
     - internship
     - new grad
     - new graduate

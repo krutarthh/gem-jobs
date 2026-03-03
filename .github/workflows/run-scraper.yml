@@ -8,6 +8,10 @@ on:
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
+# Needed to push updated DB to a state branch
+permissions:
+  contents: write
+
 # Prevent overlapping runs: only one at a time; new run cancels the previous
 concurrency:
   group: scraper
@@ -19,32 +23,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      # Single stable key: restore and save the same cache so we update it each run instead of creating a new one.
-      # Concurrency (cancel-in-progress) ensures only one run at a time, so no conflict on save.
-      - name: Restore job DB cache
-        id: restore-cache
-        uses: actions/cache/restore@v4
         with:
-          path: data
-          key: gold-gem-jobs-db
-
-      - name: Log cache restore result
-        run: |
-          echo "::group::Cache restore diagnostics"
-          echo "cache-hit: ${{ steps.restore-cache.outputs.cache-hit }}"
-          echo "cache-primary-key: ${{ steps.restore-cache.outputs.cache-primary-key }}"
-          echo "cache-matched-key: ${{ steps.restore-cache.outputs.cache-matched-key }}"
-          if [ -f data/jobs.db ]; then
-            echo "jobs.db exists after restore; size: $(du -h data/jobs.db | cut -f1)"
-            echo "job count: $(sqlite3 data/jobs.db 'SELECT COUNT(*) FROM jobs;' 2>/dev/null || echo '?')"
-          else
-            echo "jobs.db missing after restore (first run or cache miss)"
-          fi
-          echo "::endgroup::"
+          fetch-depth: 0
 
       - name: Create data dir if missing
         run: mkdir -p data
+
+      # GitHub Actions cache keys are immutable (can't update the same key each run).
+      # Instead, persist the SQLite DB to a dedicated branch so it can be updated every run.
+      - name: Restore DB from state branch (if exists)
+        run: |
+          echo "::group::Restore DB from state-db branch"
+          git fetch origin state-db || true
+          if git rev-parse --verify --quiet origin/state-db >/dev/null; then
+            git show origin/state-db:data/jobs.db > data/jobs.db || true
+          fi
+          if [ -f data/jobs.db ]; then
+            echo "jobs.db restored; size: $(du -h data/jobs.db | cut -f1)"
+          else
+            echo "no previous jobs.db found (first run)"
+          fi
+          echo "::endgroup::"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -72,7 +71,7 @@ jobs:
       - name: Log state before cache save
         if: success()
         run: |
-          echo "::group::Pre-save diagnostics"
+          echo "::group::Pre-persist diagnostics"
           echo "data/ contents:"
           ls -la data/ 2>/dev/null || true
           echo "data/ size: $(du -sh data/ 2>/dev/null | cut -f1 || echo 'N/A')"
@@ -82,18 +81,29 @@ jobs:
           fi
           echo "::endgroup::"
 
-      - name: Save job DB cache
-        id: save-cache
+      - name: Persist DB to state branch
         if: success()
-        uses: actions/cache/save@v4
-        with:
-          path: data
-          key: gold-gem-jobs-db
-
-      - name: Cache save summary
-        if: always()
         run: |
-          echo "::group::Cache summary"
-          echo "Restore: cache-hit=${{ steps.restore-cache.outputs.cache-hit }}, matched-key=${{ steps.restore-cache.outputs.cache-matched-key }}"
-          echo "Save: outcome=${{ steps.save-cache.outcome }}, key=gold-gem-jobs-db"
+          echo "::group::Persist jobs.db to state-db branch"
+          if [ ! -f data/jobs.db ]; then
+            echo "jobs.db missing; skipping persist"
+            echo "::endgroup::"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin state-db || true
+          if git rev-parse --verify --quiet origin/state-db >/dev/null; then
+            git worktree add state-worktree origin/state-db
+          else
+            git worktree add -b state-db state-worktree
+          fi
+
+          mkdir -p state-worktree/data
+          cp data/jobs.db state-worktree/data/jobs.db
+          cd state-worktree
+          git add -f data/jobs.db
+          git commit -m "Update jobs DB" || echo "No DB changes to commit"
+          git push origin HEAD:state-db
           echo "::endgroup::"
