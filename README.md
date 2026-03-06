@@ -7,7 +7,7 @@ Catch new job postings **before** LinkedIn/Indeed by scraping direct ATS and car
 1. **Watchlist** — You maintain a list of company career URLs in `config/watchlist.yaml`.
 2. **Scrape** — The tool checks each URL every N minutes (default 15), detects ATS type (Greenhouse, Lever, Ashby), and fetches jobs from public JSON APIs where possible.
 3. **Diff** — New jobs (first time seen) are stored; only new postings trigger alerts.
-4. **Filter** — Alerts are sent only for jobs matching Toronto (or GTA/remote Canada), intern/new grad/SWE I level, and optional title keywords.
+4. **Filter** — Alerts are sent only for jobs matching Toronto (or GTA/remote Canada), intern/new grad/SWE I level, and optional title keywords. The JD filter excludes roles that ask for any **professional** experience (internship experience is allowed) or 3+ years; Toronto-only is enforced via location keywords and, when `require_location_field_match` is true, the job’s location field must contain a Canada/Toronto keyword.
 5. **Notify** — Discord webhook sends an embed per new matching job.
 
 ## Setup
@@ -121,6 +121,8 @@ Optional filter flags (under `filters` in the YAML):
 
 - **allow_empty_location** (default: false) — If true, jobs with no location (e.g. from the generic scraper) pass the location check instead of being excluded.
 - **require_location_field_match** (default: false) — If true, at least one location keyword must appear in the job’s location field (not only in title/department).
+- **entry_level_only** (default: true) — If true, job must match level_keywords (intern, new grad, entry-level). If false, Toronto/Canada jobs like Backend Engineer are included when they match title_keywords and are not senior/staff.
+- **use_jd_experience_filter** (default: true) — When true, job descriptions (JD) are analyzed: jobs that clearly ask for 5+ years (or similar senior experience) in the JD are excluded, so you get roles that don’t require lots of experience even if the title doesn’t say “new grad”.
 
 Only jobs passing all filters are included in Discord alerts.
 
@@ -134,6 +136,7 @@ Only jobs passing all filters are included in Discord alerts.
 - `src/notify.py` — Discord webhook.
 - `scripts/run_scheduler.py` — Loop with sleep for continuous runs.
 - `scripts/detect_ats_for_watchlist.py` — Report ATS and job count per company.
+- `scripts/verify_toronto_jobs.py` — Fetch from all configured ATS boards and report how many jobs pass the Canada/Toronto location filter (confirms links + filter).
 - `.github/workflows/run-scraper.yml` — GitHub Actions: run scraper every 15 min.
 - `data/jobs.db` — SQLite DB (created automatically; in `.gitignore`).
 

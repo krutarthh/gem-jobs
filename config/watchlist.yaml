@@ -17,6 +17,8 @@ companies:
     board_id: ripple
   - name: Plaid
     careers_url: https://plaid.com/careers/
+    ats_type: lever
+    board_id: plaid
   - name: Coinbase
     careers_url: https://www.coinbase.com/careers
     ats_type: greenhouse
@@ -44,6 +46,8 @@ companies:
     board_id: figma
   - name: Linear
     careers_url: https://linear.app/careers
+    ats_type: ashby
+    board_id: linear
   - name: Airtable
     careers_url: https://airtable.com/careers
     ats_type: greenhouse
@@ -73,6 +77,8 @@ companies:
     board_id: databricks
   - name: Snowflake
     careers_url: https://careers.snowflake.com/
+    ats_type: greenhouse
+    board_id: snowflake
   - name: Twilio
     careers_url: https://www.twilio.com/company/jobs
     ats_type: greenhouse
@@ -88,8 +94,12 @@ companies:
     board_id: anthropic
   - name: OpenAI
     careers_url: https://openai.com/careers
+    ats_type: ashby
+    board_id: openai
   - name: Scale AI
     careers_url: https://scale.com/careers
+    ats_type: greenhouse
+    board_id: scaleai
   - name: Hugging Face
     careers_url: https://huggingface.co/jobs
   # --- E‑commerce & marketplaces ---
@@ -101,6 +111,8 @@ companies:
     board_id: airbnb
   - name: DoorDash
     careers_url: https://careers.doordash.com/
+    ats_type: greenhouse
+    board_id: doordashusa
   - name: Instacart
     careers_url: https://www.instacart.com/careers
     ats_type: greenhouse
@@ -126,7 +138,9 @@ companies:
   - name: Netflix
     careers_url: https://jobs.netflix.com/
   - name: Spotify
-    careers_url: https://www.lifeatspotify.com/jobs
+    careers_url: https://www.lifeatspotify.com/jobs?l=toronto
+    ats_type: lever
+    board_id: spotify
   - name: Dropbox
     careers_url: https://www.dropbox.com/jobs
     ats_type: greenhouse
@@ -144,7 +158,9 @@ companies:
     careers_url: https://www.cloudflare.com/careers/
   # --- Canadian & Toronto-relevant ---
   - name: Wealthsimple
-    careers_url: https://www.wealthsimple.com/careers
+    careers_url: https://www.wealthsimple.com/en-ca/careers
+    ats_type: lever
+    board_id: wealthsimple
   - name: Bench
     careers_url: https://bench.co/careers/
   - name: TouchBistro
@@ -178,6 +194,8 @@ companies:
     careers_url: https://www.deel.com/careers
   - name: Remote
     careers_url: https://boards.greenhouse.io/remote
+    ats_type: greenhouse
+    board_id: remote
   - name: Zapier
     careers_url: https://zapier.com/jobs
   - name: Cal.com
@@ -188,6 +206,8 @@ companies:
     careers_url: https://sourcegraph.com/careers
   - name: GitLab
     careers_url: https://about.gitlab.com/jobs/
+    ats_type: greenhouse
+    board_id: gitlab
   - name: HashiCorp
     careers_url: https://www.hashicorp.com/careers
   - name: Snyk
@@ -313,8 +333,14 @@ companies:
   - name: Zip
     careers_url: https://www.zip.co/careers/
 
-# Filter defaults — new grad only; senior/staff/lead excluded; optional recency
+# Filter defaults — senior/staff/lead excluded; optional recency
 filters:
+  # When true, only jobs matching level_keywords (intern, new grad, entry-level). When false, include all Toronto/Canada jobs that match title_keywords and don't hit exclude_keywords (e.g. Backend Engineer in Toronto).
+  entry_level_only: false
+  # When true, exclude jobs whose description asks for any professional experience or 3+ years (internship experience allowed).
+  use_jd_experience_filter: true
+  # When true, job's location field must contain at least one of the locations below (avoids "Toronto" in title but location e.g. New York).
+  require_location_field_match: true
   # Canada only — job location must contain one of these (no US/UK/other countries)
   # ON/QC = province abbreviations (e.g. Toronto, ON; Montreal, QC). QC can rarely mean "quality control" in titles.
   locations:
@@ -339,7 +365,6 @@ filters:
     - Saskatchewan
     - Nova Scotia
     - Halifax
-    - Remote - Canada
   level_keywords:  # job must contain one of these (intern / new grad / entry-level)
     - internship
     - new grad

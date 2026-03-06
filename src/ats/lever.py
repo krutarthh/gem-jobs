@@ -53,6 +53,7 @@ def fetch_jobs(company_slug: str) -> list[JobDict]:
             location = department = None
         url = j.get("hostedUrl") or j.get("applyUrl")
         raw_id = j.get("id")
+        description = j.get("description") if isinstance(j.get("description"), str) else None
         out.append({
             "id": str(raw_id) if raw_id is not None else url,
             "title": j.get("text"),
@@ -60,5 +61,6 @@ def fetch_jobs(company_slug: str) -> list[JobDict]:
             "department": department,
             "url": url,
             "posted_at": j.get("createdAt"),
+            "description": description,
         })
     return out

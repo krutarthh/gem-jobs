@@ -127,6 +127,7 @@ def run_once() -> None:
                 department=j.get("department"),
                 url=j.get("url"),
                 posted_at=posted_at,
+                description=j.get("description"),
             )
             if is_new:
                 new_count += 1
@@ -141,6 +142,8 @@ def run_once() -> None:
         max_days_since_posted=filters.get("max_days_since_posted"),
         allow_empty_location=filters.get("allow_empty_location", False),
         require_location_field_match=filters.get("require_location_field_match", False),
+        entry_level_only=filters.get("entry_level_only", True),
+        use_jd_experience_filter=filters.get("use_jd_experience_filter", True),
     )
     # Dedupe by (company, title, url) so we never send the same job twice in one run
     seen_key: set[tuple[str, str, str]] = set()

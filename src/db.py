@@ -65,6 +65,8 @@ def init_db() -> None:
             columns = [row[1] for row in info]
             if "posted_at" not in columns:
                 c.execute("ALTER TABLE jobs ADD COLUMN posted_at TEXT")
+            if "description" not in columns:
+                c.execute("ALTER TABLE jobs ADD COLUMN description TEXT")
         except sqlite3.OperationalError:
             pass
 
@@ -109,11 +111,13 @@ def upsert_job(
     department: str | None,
     url: str | None,
     posted_at: str | None = None,
+    description: str | None = None,
 ) -> tuple[int, bool]:
     """
     Insert or update job. Return (job_id, is_new).
     is_new is True only when the job was just inserted (first time seen).
     posted_at: optional ISO date from ATS (used for recency filter).
+    description: optional full JD text for experience-based filtering.
     """
     now = _now()
     with _conn() as c:
@@ -124,17 +128,18 @@ def upsert_job(
         is_new = existing is None
         c.execute(
             """
-            INSERT INTO jobs (company_id, external_id, title, location, department, url, posted_at, first_seen_at, last_seen_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO jobs (company_id, external_id, title, location, department, url, posted_at, description, first_seen_at, last_seen_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(company_id, external_id) DO UPDATE SET
                 title = excluded.title,
                 location = excluded.location,
                 department = excluded.department,
                 url = excluded.url,
                 posted_at = COALESCE(excluded.posted_at, jobs.posted_at),
+                description = excluded.description,
                 last_seen_at = excluded.last_seen_at
             """,
-            (company_id, external_id, title, location, department, url, posted_at, now, now),
+            (company_id, external_id, title, location, department, url, posted_at, description, now, now),
         )
         row = c.execute(
             "SELECT id FROM jobs WHERE company_id = ? AND external_id = ?",
@@ -150,7 +155,7 @@ def get_new_jobs_since(since: datetime) -> list[dict[str, Any]]:
         rows = c.execute(
             """
             SELECT j.id, j.company_id, j.external_id, j.title, j.location, j.department, j.url,
-                   j.posted_at, j.first_seen_at, c.name AS company_name
+                   j.posted_at, j.description, j.first_seen_at, c.name AS company_name
             FROM jobs j
             JOIN companies c ON c.id = j.company_id
             WHERE j.first_seen_at >= ?

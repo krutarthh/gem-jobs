@@ -65,6 +65,7 @@ def fetch_jobs(client_name: str) -> list[JobDict]:
         loc = " | ".join(unique) if unique else None
         url = j.get("url") or j.get("applicationUrl") or j.get("jobUrl")
         raw_id = j.get("id")
+        description = j.get("descriptionPlain") or (j.get("descriptionHtml") if isinstance(j.get("descriptionHtml"), str) else None)
         out.append({
             "id": str(raw_id) if raw_id is not None else url,
             "title": j.get("title"),
@@ -72,5 +73,6 @@ def fetch_jobs(client_name: str) -> list[JobDict]:
             "department": j.get("department"),
             "url": url,
             "posted_at": j.get("publishedAt") or j.get("createdAt"),
+            "description": description,
         })
     return out

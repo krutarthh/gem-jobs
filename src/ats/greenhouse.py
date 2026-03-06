@@ -57,6 +57,8 @@ def fetch_jobs(board_token: str) -> list[JobDict]:
             department = d.get("name") if isinstance(d, dict) else str(d)
         # Prefer first_published for "new" postings; fallback to updated_at
         posted_at = j.get("first_published") or j.get("updated_at")
+        # content=true returns full job description (HTML) for JD-based experience filtering
+        description = j.get("content") if isinstance(j.get("content"), str) else None
         out.append({
             "id": str(j.get("id", "")),
             "title": j.get("title"),
@@ -64,5 +66,6 @@ def fetch_jobs(board_token: str) -> list[JobDict]:
             "department": department,
             "url": j.get("absolute_url"),
             "posted_at": posted_at,
+            "description": description,
         })
     return out

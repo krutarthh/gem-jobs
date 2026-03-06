@@ -62,6 +62,8 @@ def load_filters() -> dict:
         "max_days_since_posted": filters.get("max_days_since_posted", defaults["max_days_since_posted"]),
         "allow_empty_location": filters.get("allow_empty_location", defaults["allow_empty_location"]),
         "require_location_field_match": filters.get("require_location_field_match", defaults["require_location_field_match"]),
+        "entry_level_only": filters.get("entry_level_only", defaults["entry_level_only"]),
+        "use_jd_experience_filter": filters.get("use_jd_experience_filter", defaults["use_jd_experience_filter"]),
     }
 
 
@@ -112,4 +114,6 @@ def _default_filters() -> dict:
         "max_days_since_posted": 30,
         "allow_empty_location": False,
         "require_location_field_match": False,
+        "entry_level_only": True,
+        "use_jd_experience_filter": True,
     }
