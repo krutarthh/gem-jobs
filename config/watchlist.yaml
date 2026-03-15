@@ -406,4 +406,4 @@ filters:
     - software engineer iii
     - tech lead
   # Only alert on jobs posted in the last N days (when ATS provides posted_at). 0 = off
-  max_days_since_posted: 30
+  max_days_since_posted: 1
