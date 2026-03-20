@@ -18,6 +18,7 @@ from src.ats.detector import detect_ats, detect_ats_from_html
 from src.ats.greenhouse import fetch_jobs as gh_fetch
 from src.ats.lever import fetch_jobs as lever_fetch
 from src.ats.ashby import fetch_jobs as ashby_fetch
+from src.ats.spa_lightpanda import fetch_jobs as spa_fetch
 
 
 def main() -> None:
@@ -40,6 +41,8 @@ def main() -> None:
                 count = len(lever_fetch(override_id))
             elif override_type == "ashby":
                 count = len(ashby_fetch(override_id))
+            elif override_type == "spa":
+                count = len(spa_fetch(override_id))
             print(f"  {name}: {override_type} / {override_id} (override, {count} jobs)")
             continue
         # Resolve redirect and detect from URL, then from page HTML

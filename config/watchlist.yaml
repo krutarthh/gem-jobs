@@ -2,6 +2,11 @@
 # ATS (Greenhouse, Lever, Ashby) auto-detected from URL or page HTML when not set.
 # Set ats_type + board_id for custom domains that use Greenhouse/Ashby (reliable API fetch).
 companies:
+  # --- AI / Research ---
+  - name: Borealis AI
+    careers_url: https://www.borealisai.com/careers/
+    ats_type: spa
+    board_id: https://jobs.rbc.com/ca/en/rbc-borealis
   # --- Fintech & payments ---
   - name: Toast
     careers_url: https://careers.toasttab.com/

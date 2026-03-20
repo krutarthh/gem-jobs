@@ -131,7 +131,7 @@ Only jobs passing all filters are included in Discord alerts.
 - `config/watchlist.yaml` — Company list and filter config.
 - `src/main.py` — Entry point: load config, scrape, upsert, filter, notify.
 - `src/db.py` — SQLite schema and “new since last run” queries.
-- `src/ats/` — ATS detector and fetchers (Greenhouse, Lever, Ashby, generic).
+- `src/ats/` — ATS detector and fetchers (Greenhouse, Lever, Ashby, spa/Lightpanda for JS-rendered boards, generic).
 - `src/filters.py` — Location/level/keyword filtering.
 - `src/notify.py` — Discord webhook.
 - `scripts/run_scheduler.py` — Loop with sleep for continuous runs.
