@@ -342,28 +342,24 @@ companies:
 
 # Filter defaults — senior/staff/lead excluded; optional recency
 filters:
-  # When true, only jobs matching level_keywords (intern, new grad, entry-level). When false, include all Toronto/Canada jobs that match title_keywords and don't hit exclude_keywords (e.g. Backend Engineer in Toronto).
   entry_level_only: false
-  # When true, exclude jobs whose description asks for any professional experience or 3+ years (internship experience allowed).
   use_jd_experience_filter: true
-  # When true, job's location field must contain at least one of the locations below (avoids "Toronto" in title but location e.g. New York).
   require_location_field_match: true
-  # Canada only — job location must contain one of these (no US/UK/other countries)
-  # ON/QC = province abbreviations (e.g. Toronto, ON; Montreal, QC). QC can rarely mean "quality control" in titles.
+
   locations:
     - Canada
     - Toronto
     - Greater Toronto Area
     - GTA
     - Ontario
-    - "ON"   # quoted: unquoted ON is parsed as boolean true in YAML
+    - "ON"
     - Remote - Canada
     - Vancouver
     - British Columbia
     - BC
     - Montreal
     - Quebec
-    - "QC"   # quoted for clarity (QC is always string in YAML)
+    - "QC"
     - Alberta
     - Calgary
     - Ottawa
@@ -372,14 +368,75 @@ filters:
     - Saskatchewan
     - Nova Scotia
     - Halifax
-  level_keywords:  # job must contain one of these (intern / new grad / entry-level)
+    # --- added ---
+    - Mississauga
+    - Brampton
+    - Markham
+    - Vaughan
+    - Richmond Hill
+    - Scarborough
+    - North York
+    - Etobicoke
+    - Burlington
+    - Hamilton
+    - Kitchener
+    - London
+    - Winnipeg
+    - Edmonton
+    - Regina
+    - Saskatoon
+    - Fredericton
+    - New Brunswick
+    - "NB"
+    - Prince Edward Island
+    - "PEI"
+    - Newfoundland
+    - "NL"
+    - Canada Remote
+    - Nationwide Canada
+
+  level_keywords:
     - internship
     - new grad
     - new graduate
     - SWE I
+    - Engineer 1
     - Software Engineer I
     - entry level
     - entry-level
+    # --- added ---
+    - intern
+    - co-op
+    - coop
+    - co op
+    - junior
+    - associate
+    - early career
+    - early-career
+    - recent graduate
+    - new grads
+    - campus hire
+    - campus recruit
+    - university grad
+    - college grad
+    - graduate program
+    - rotational program
+    - placement
+    - fellowship
+    - SWE 1
+    - SWE-I
+    - Engineer I
+    - Software Developer I
+    - Software Developer 1
+    - L3
+    - E3
+    - IC1
+    - IC2
+    - 0-1 years
+    - 0-2 years
+    - 0 years experience
+    - no experience required
+
   title_keywords:
     - software
     - backend
@@ -387,18 +444,42 @@ filters:
     - fullstack
     - developer
     - engineer
-  # Exclude any job whose title or department contains any of these (senior/staff/lead)
+    # --- added ---
+    - frontend
+    - front-end
+    - front end
+    - swe
+    - sde
+    - web developer
+    - web engineer
+    - mobile
+    - ios
+    - android
+    - platform engineer
+    - infrastructure
+    - cloud engineer
+    - devops
+    - site reliability
+    - sre
+    - ml engineer
+    - machine learning engineer
+    - data engineer
+    - application developer
+    - application engineer
+    - systems engineer
+    - embedded
+
   exclude_keywords:
     - senior
     - staff
     - principal
-    - lead 
+    - lead
     - architect
     - director
     - distinguished
     - fellow
     - head of
-    - vp 
+    - vp
     - vice president
     - sr.
     - manager
@@ -412,5 +493,35 @@ filters:
     - software engineer ii
     - software engineer iii
     - tech lead
-  # Only alert on jobs posted in the last N days (when ATS provides posted_at). 0 = off
-  max_days_since_posted: 1
+    # --- added ---
+    - "sr "          # "Sr Engineer" without period
+    - senior engineer
+    - engineering manager
+    - team lead
+    - technical lead
+    - tech lead
+    - solution architect
+    - solutions architect
+    - enterprise architect
+    - mid-level
+    - mid level
+    - experienced engineer
+    - l4
+    - e4
+    - e5
+    - e6
+    - e7
+    - ic4
+    - ic5
+    - ic6
+    - 3+ years
+    - 4+ years
+    - 5+ years
+    - 6+ years
+    - 7+ years
+    - 10+ years
+    - minimum 3 years
+    - minimum 4 years
+    - minimum 5 years
+
+  max_days_since_posted: 2
