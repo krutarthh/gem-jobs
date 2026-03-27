@@ -157,6 +157,8 @@ companies:
     board_id: okta
   - name: CrowdStrike
     careers_url: https://www.crowdstrike.com/careers/
+    ats_type: spa
+    board_id: https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers
   - name: Palo Alto Networks
     careers_url: https://jobs.paloaltonetworks.com/
   - name: Cloudflare
