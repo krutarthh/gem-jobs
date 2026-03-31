@@ -339,6 +339,10 @@ companies:
     careers_url: https://www.ixl.com/company/careers
   - name: Zip
     careers_url: https://www.zip.co/careers/
+  - name: Motive
+    careers_url: https://gomotive.com/company/careers/jobs/
+    ats_type: greenhouse
+    board_id: gomotive
 
 # Filter defaults — senior/staff/lead excluded; optional recency
 filters:
