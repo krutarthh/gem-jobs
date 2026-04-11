@@ -17,6 +17,8 @@ DB_PATH = Path(os.getenv("DB_PATH", _DEFAULT_DB))
 
 # Discord and scheduler
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+# Optional second webhook for Tier B (core match but failed JD or recency — review queue)
+DISCORD_REVIEW_WEBHOOK_URL = os.getenv("DISCORD_REVIEW_WEBHOOK_URL", "")
 SCRAPE_INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", "15"))
 
 
@@ -64,6 +66,7 @@ def load_filters() -> dict:
         "require_location_field_match": filters.get("require_location_field_match", defaults["require_location_field_match"]),
         "entry_level_only": filters.get("entry_level_only", defaults["entry_level_only"]),
         "use_jd_experience_filter": filters.get("use_jd_experience_filter", defaults["use_jd_experience_filter"]),
+        "jd_filter_mode": filters.get("jd_filter_mode", defaults["jd_filter_mode"]),
     }
 
 
@@ -116,4 +119,5 @@ def _default_filters() -> dict:
         "require_location_field_match": False,
         "entry_level_only": True,
         "use_jd_experience_filter": True,
+        "jd_filter_mode": "standard",
     }

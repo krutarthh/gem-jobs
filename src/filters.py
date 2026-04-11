@@ -128,11 +128,17 @@ _JD_INTERNSHIP_CONTEXT = re.compile(r"\binterns?\b|\binternship\b", re.I)
 _JD_CONTEXT_WINDOW = 120  # chars before/after a match; if "intern" in window, treat as internship OK
 
 
-def _jd_asks_senior_experience(description: str | None) -> bool:
+def _jd_asks_senior_experience(
+    description: str | None,
+    *,
+    include_professional_phrases: bool = True,
+) -> bool:
     """
     Return True if the JD requires professional experience or 3+ years (generic).
     Exclude if JD asks for any professional experience (even 1 year). Internship experience is allowed.
     New-grad/entry-level JDs: do not exclude solely on bare "1+ years" or "2+ years" (no "professional").
+    When include_professional_phrases is False (yoe_and_senior_only mode), skip boilerplate
+    "professional experience" patterns and only apply senior-level and 3+ year YOE heuristics.
     """
     if not description or not isinstance(description, str) or len(description.strip()) < 50:
         return False
@@ -141,15 +147,16 @@ def _jd_asks_senior_experience(description: str | None) -> bool:
     for pat in _JD_SENIOR_LEVEL_PATTERNS:
         if pat.search(text_norm):
             return True
-    for pat in _JD_ANY_PROFESSIONAL_PATTERNS:
-        m = pat.search(text_norm)
-        if m:
-            start = max(0, m.start() - _JD_CONTEXT_WINDOW)
-            end = min(len(text_norm), m.end() + _JD_CONTEXT_WINDOW)
-            window = text_norm[start:end]
-            if _JD_INTERNSHIP_CONTEXT.search(window):
-                continue  # e.g. "professional internship experience" or internship context
-            return True
+    if include_professional_phrases:
+        for pat in _JD_ANY_PROFESSIONAL_PATTERNS:
+            m = pat.search(text_norm)
+            if m:
+                start = max(0, m.start() - _JD_CONTEXT_WINDOW)
+                end = min(len(text_norm), m.end() + _JD_CONTEXT_WINDOW)
+                window = text_norm[start:end]
+                if _JD_INTERNSHIP_CONTEXT.search(window):
+                    continue  # e.g. "professional internship experience" or internship context
+                return True
     for pat in _JD_GENERIC_YOE_PATTERNS:
         m = pat.search(text_norm)
         if m:
@@ -178,6 +185,66 @@ def _parse_posted_at(posted_at: str | None) -> datetime | None:
         return None
 
 
+def _jd_include_professional_phrases(jd_filter_mode: str) -> bool:
+    """standard: full JD rules; yoe_and_senior_only: skip 'professional experience' boilerplate patterns."""
+    return jd_filter_mode != "yoe_and_senior_only"
+
+
+def filter_failure_reason(
+    job: dict[str, Any],
+    locations: list[str],
+    level_keywords: list[str],
+    title_keywords: list[str],
+    exclude_keywords: list[str] | None = None,
+    max_days_since_posted: int | None = None,
+    allow_empty_location: bool = False,
+    require_location_field_match: bool = False,
+    entry_level_only: bool = True,
+    use_jd_experience_filter: bool = True,
+    jd_filter_mode: str = "standard",
+) -> str | None:
+    """
+    Return None if the job passes all filters; otherwise the first failing stage name.
+    Stages: location, location_field, entry_level, title_keywords, exclude_keywords,
+    jd_experience, recency.
+    """
+    title = _normalize(job.get("title") or "")
+    location_str = _location_to_string(job.get("location"))
+    location = _normalize(location_str)
+    department = _normalize(job.get("department") or "")
+    combined = f"{title} {location} {department}"
+    title_dept = f"{title} {department}"
+
+    if allow_empty_location and not location_str.strip():
+        pass
+    elif not _matches_any(combined, locations):
+        return "location"
+    if require_location_field_match and location_str.strip() and not _matches_any(location_str, locations):
+        return "location_field"
+    if entry_level_only and not _matches_any(title_dept, level_keywords):
+        return "entry_level"
+    if not _matches_any(title_dept, title_keywords):
+        return "title_keywords"
+
+    exclude = exclude_keywords if exclude_keywords is not None else DEFAULT_EXCLUDE_KEYWORDS
+    if _contains_any(title_dept, exclude):
+        return "exclude_keywords"
+
+    if use_jd_experience_filter:
+        desc = job.get("description") if isinstance(job.get("description"), str) else None
+        prof = _jd_include_professional_phrases(jd_filter_mode)
+        if _jd_asks_senior_experience(desc, include_professional_phrases=prof):
+            return "jd_experience"
+
+    if max_days_since_posted is not None and max_days_since_posted > 0:
+        posted = _parse_posted_at(job.get("posted_at"))
+        if posted is not None:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=max_days_since_posted)
+            if posted < cutoff:
+                return "recency"
+    return None
+
+
 def passes_filters(
     job: dict[str, Any],
     locations: list[str],
@@ -189,6 +256,7 @@ def passes_filters(
     require_location_field_match: bool = False,
     entry_level_only: bool = True,
     use_jd_experience_filter: bool = True,
+    jd_filter_mode: str = "standard",
 ) -> bool:
     """
     Return True if job passes all filters (new-grad only, no senior/staff, optional recency).
@@ -201,41 +269,22 @@ def passes_filters(
     - Exclude: title or department must NOT contain any of exclude_keywords (senior, staff, etc.)
     - Recency: if max_days_since_posted set and job has posted_at, reject if older than that
     """
-    title = _normalize(job.get("title") or "")
-    location_str = _location_to_string(job.get("location"))
-    location = _normalize(location_str)
-    department = _normalize(job.get("department") or "")
-    combined = f"{title} {location} {department}"
-    title_dept = f"{title} {department}"
-
-    # Location check: combined text or (if allow_empty_location) empty location passes
-    if allow_empty_location and not location_str.strip():
-        pass  # treat empty location as passing
-    elif not _matches_any(combined, locations):
-        return False
-    if require_location_field_match and location_str.strip() and not _matches_any(location_str, locations):
-        return False
-    if entry_level_only and not _matches_any(title_dept, level_keywords):
-        return False
-    if not _matches_any(title_dept, title_keywords):
-        return False
-
-    exclude = exclude_keywords if exclude_keywords is not None else DEFAULT_EXCLUDE_KEYWORDS
-    if _contains_any(title_dept, exclude):
-        return False
-
-    if use_jd_experience_filter:
-        desc = job.get("description") if isinstance(job.get("description"), str) else None
-        if _jd_asks_senior_experience(desc):
-            return False
-
-    if max_days_since_posted is not None and max_days_since_posted > 0:
-        posted = _parse_posted_at(job.get("posted_at"))
-        if posted is not None:
-            cutoff = datetime.now(timezone.utc) - timedelta(days=max_days_since_posted)
-            if posted < cutoff:
-                return False
-    return True
+    return (
+        filter_failure_reason(
+            job,
+            locations,
+            level_keywords,
+            title_keywords,
+            exclude_keywords=exclude_keywords,
+            max_days_since_posted=max_days_since_posted,
+            allow_empty_location=allow_empty_location,
+            require_location_field_match=require_location_field_match,
+            entry_level_only=entry_level_only,
+            use_jd_experience_filter=use_jd_experience_filter,
+            jd_filter_mode=jd_filter_mode,
+        )
+        is None
+    )
 
 
 def filter_jobs(
@@ -249,6 +298,7 @@ def filter_jobs(
     require_location_field_match: bool = False,
     entry_level_only: bool = True,
     use_jd_experience_filter: bool = True,
+    jd_filter_mode: str = "standard",
 ) -> list[dict[str, Any]]:
     """Return only jobs that pass all filters (new-grad only, no senior, optional recency)."""
     # #region agent log
@@ -270,5 +320,6 @@ def filter_jobs(
             require_location_field_match=require_location_field_match,
             entry_level_only=entry_level_only,
             use_jd_experience_filter=use_jd_experience_filter,
+            jd_filter_mode=jd_filter_mode,
         )
     ]

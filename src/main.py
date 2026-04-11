@@ -9,7 +9,7 @@ from urllib.parse import urlparse, urlunparse
 
 import requests
 
-from src.config import load_filters, load_watchlist
+from src.config import DISCORD_REVIEW_WEBHOOK_URL, load_filters, load_watchlist
 from src.db import (
     finish_run,
     get_new_jobs_since,
@@ -20,9 +20,25 @@ from src.db import (
 )
 from src.ats import detect_ats, detect_ats_from_html, fetch_jobs_for_company
 from src.filters import filter_jobs
-from src.notify import send_discord_new_jobs
+from src.notify import send_discord_new_jobs, send_discord_review_jobs
 
 REQUEST_TIMEOUT = 10
+
+
+def _dedupe_jobs_by_company_title_url(jobs: list[dict]) -> list[dict]:
+    seen_key: set[tuple[str, str, str]] = set()
+    out: list[dict] = []
+    for j in jobs:
+        key = (
+            (j.get("company_name") or "").strip(),
+            (j.get("title") or "").strip(),
+            (j.get("url") or "").strip(),
+        )
+        if key in seen_key:
+            continue
+        seen_key.add(key)
+        out.append(j)
+    return out
 
 
 def _resolve_redirect(url: str) -> str:
@@ -133,33 +149,57 @@ def run_once() -> None:
                 new_count += 1
 
     new_jobs = get_new_jobs_since(run_started)
-    filtered = filter_jobs(
-        new_jobs,
+    jd_mode = filters.get("jd_filter_mode", "standard")
+    shared_kw = dict(
         locations=filters["locations"],
         level_keywords=filters["level_keywords"],
         title_keywords=filters["title_keywords"],
         exclude_keywords=filters.get("exclude_keywords"),
-        max_days_since_posted=filters.get("max_days_since_posted"),
         allow_empty_location=filters.get("allow_empty_location", False),
         require_location_field_match=filters.get("require_location_field_match", False),
         entry_level_only=filters.get("entry_level_only", True),
-        use_jd_experience_filter=filters.get("use_jd_experience_filter", True),
+        jd_filter_mode=jd_mode,
     )
-    # Dedupe by (company, title, url) so we never send the same job twice in one run
-    seen_key: set[tuple[str, str, str]] = set()
-    deduped: list[dict] = []
-    for j in filtered:
-        key = (
-            (j.get("company_name") or "").strip(),
-            (j.get("title") or "").strip(),
-            (j.get("url") or "").strip(),
-        )
-        if key in seen_key:
-            continue
-        seen_key.add(key)
-        deduped.append(j)
+    filtered = filter_jobs(
+        new_jobs,
+        max_days_since_posted=filters.get("max_days_since_posted"),
+        use_jd_experience_filter=filters.get("use_jd_experience_filter", True),
+        **shared_kw,
+    )
+    deduped = _dedupe_jobs_by_company_title_url(filtered)
     if deduped:
         send_discord_new_jobs(deduped)
+
+    # Tier B: core match (no JD / no recency) minus strict pass — optional second webhook
+    if DISCORD_REVIEW_WEBHOOK_URL.strip():
+        core_pass = filter_jobs(
+            new_jobs,
+            max_days_since_posted=None,
+            use_jd_experience_filter=False,
+            **shared_kw,
+        )
+        core_deduped = _dedupe_jobs_by_company_title_url(core_pass)
+        strict_keys = {
+            (
+                (j.get("company_name") or "").strip(),
+                (j.get("title") or "").strip(),
+                (j.get("url") or "").strip(),
+            )
+            for j in deduped
+        }
+        review = [
+            j
+            for j in core_deduped
+            if (
+                (j.get("company_name") or "").strip(),
+                (j.get("title") or "").strip(),
+                (j.get("url") or "").strip(),
+            )
+            not in strict_keys
+        ]
+        if review:
+            send_discord_review_jobs(review)
+
     finish_run(run_id, companies_checked, new_count)
 
 

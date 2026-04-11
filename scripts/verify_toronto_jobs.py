@@ -62,10 +62,12 @@ def main() -> None:
             level_keywords=level_keywords,
             title_keywords=title_keywords,
             exclude_keywords=exclude_keywords,
+            max_days_since_posted=filters.get("max_days_since_posted"),
             allow_empty_location=filters.get("allow_empty_location", False),
             require_location_field_match=filters.get("require_location_field_match", False),
             entry_level_only=filters.get("entry_level_only", True),
             use_jd_experience_filter=filters.get("use_jd_experience_filter", True),
+            jd_filter_mode=filters.get("jd_filter_mode", "standard"),
         )
 
         total_fetched += len(jobs)

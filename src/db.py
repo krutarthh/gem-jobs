@@ -1,7 +1,7 @@
 """SQLite schema, upsert jobs, query new since last run."""
 
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -151,6 +151,25 @@ def upsert_job(
 def get_new_jobs_since(since: datetime) -> list[dict[str, Any]]:
     """Return jobs where first_seen_at >= since, with company name joined."""
     since_str = since.isoformat()
+    with _conn() as c:
+        rows = c.execute(
+            """
+            SELECT j.id, j.company_id, j.external_id, j.title, j.location, j.department, j.url,
+                   j.posted_at, j.description, j.first_seen_at, c.name AS company_name
+            FROM jobs j
+            JOIN companies c ON c.id = j.company_id
+            WHERE j.first_seen_at >= ?
+            ORDER BY j.first_seen_at DESC
+            """,
+            (since_str,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_jobs_first_seen_within_days(days: int) -> list[dict[str, Any]]:
+    """Jobs whose first_seen_at is within the last `days` days (for filter breakdown / analytics)."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    since_str = cutoff.isoformat()
     with _conn() as c:
         rows = c.execute(
             """
