@@ -22,23 +22,25 @@ DISCORD_REVIEW_WEBHOOK_URL = os.getenv("DISCORD_REVIEW_WEBHOOK_URL", "")
 SCRAPE_INTERVAL_MINUTES = int(os.getenv("SCRAPE_INTERVAL_MINUTES", "15"))
 
 
-def load_watchlist() -> list[dict]:
-    """Load companies and filter config from watchlist YAML."""
+def _read_watchlist_yaml() -> dict:
     path = WATCHLIST_PATH if WATCHLIST_PATH.is_absolute() else PROJECT_ROOT / WATCHLIST_PATH
     if not path.exists():
-        return []
+        return {}
     with open(path, "r") as f:
-        data = yaml.safe_load(f) or {}
+        return yaml.safe_load(f) or {}
+
+
+def load_watchlist() -> list[dict]:
+    """Load companies and filter config from watchlist YAML."""
+    data = _read_watchlist_yaml()
     return data.get("companies", [])
 
 
 def load_filters() -> dict:
     """Load filter lists (locations, level_keywords, title_keywords) from watchlist YAML."""
-    path = WATCHLIST_PATH if WATCHLIST_PATH.is_absolute() else PROJECT_ROOT / WATCHLIST_PATH
-    if not path.exists():
+    data = _read_watchlist_yaml()
+    if not data:
         return _default_filters()
-    with open(path, "r") as f:
-        data = yaml.safe_load(f) or {}
     filters = data.get("filters", {})
     defaults = _default_filters()
 
@@ -120,4 +122,30 @@ def _default_filters() -> dict:
         "entry_level_only": True,
         "use_jd_experience_filter": True,
         "jd_filter_mode": "standard",
+    }
+
+
+def load_db_cleanup() -> dict:
+    """Load SQLite retention settings from watchlist YAML (`db_cleanup:`)."""
+    data = _read_watchlist_yaml()
+    defaults = _default_db_cleanup()
+    if not data:
+        return defaults
+    raw = data.get("db_cleanup")
+    if not isinstance(raw, dict):
+        return defaults
+    merged = {**defaults}
+    for key in defaults:
+        if key in raw:
+            merged[key] = raw[key]
+    return merged
+
+
+def _default_db_cleanup() -> dict:
+    return {
+        "enabled": True,
+        "delete_jobs_last_seen_older_than_days": 90,
+        "delete_runs_older_than_days": 180,
+        "delete_orphan_companies": True,
+        "vacuum": True,
     }

@@ -3,17 +3,19 @@ Entry: load config, run scraper, diff, notify.
 Run once: python -m src.main
 """
 
+import os
 import sys
 from datetime import datetime, timezone
 from urllib.parse import urlparse, urlunparse
 
 import requests
 
-from src.config import DISCORD_REVIEW_WEBHOOK_URL, load_filters, load_watchlist
+from src.config import DISCORD_REVIEW_WEBHOOK_URL, load_db_cleanup, load_filters, load_watchlist
 from src.db import (
     finish_run,
     get_new_jobs_since,
     init_db,
+    run_database_cleanup,
     start_run,
     upsert_company,
     upsert_job,
@@ -201,6 +203,16 @@ def run_once() -> None:
             send_discord_review_jobs(review)
 
     finish_run(run_id, companies_checked, new_count)
+
+    cleanup_stats = run_database_cleanup(load_db_cleanup())
+    if not cleanup_stats.get("skipped") and os.getenv("GITHUB_ACTIONS"):
+        print(
+            "db_cleanup:",
+            f"jobs_removed={cleanup_stats.get('jobs_deleted', 0)}",
+            f"runs_removed={cleanup_stats.get('runs_deleted', 0)}",
+            f"companies_removed={cleanup_stats.get('companies_deleted', 0)}",
+            f"vacuum={cleanup_stats.get('vacuumed', False)}",
+        )
 
 
 def main() -> int:

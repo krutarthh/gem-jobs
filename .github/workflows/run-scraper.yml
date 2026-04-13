@@ -62,14 +62,7 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python -m src.main
 
-      # Keep DB small: prune old jobs (90 days), then compact. Smaller DB = fewer random cache save failures.
-      - name: Prune and compact DB before cache
-        if: success()
-        run: |
-          if [ -f data/jobs.db ]; then
-            sqlite3 data/jobs.db "DELETE FROM jobs WHERE last_seen_at < datetime('now', '-90 days');" 2>/dev/null || true
-            sqlite3 data/jobs.db "VACUUM;" 2>/dev/null || true
-          fi
+      # DB pruning and VACUUM run inside python -m src.main (watchlist db_cleanup:).
 
       - name: Log state before cache save
         if: success()

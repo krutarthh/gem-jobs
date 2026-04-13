@@ -201,3 +201,49 @@ def finish_run(run_id: int, companies_checked: int, new_jobs_count: int) -> None
             "UPDATE runs SET finished_at = ?, companies_checked = ?, new_jobs_count = ? WHERE id = ?",
             (now, companies_checked, new_jobs_count, run_id),
         )
+
+
+def run_database_cleanup(cfg: dict) -> dict[str, Any]:
+    """
+    Prune old rows to keep the SQLite file small (e.g. CI cache / state branch).
+    Config from watchlist `db_cleanup:` (see load_db_cleanup).
+    Returns stats: jobs_deleted, runs_deleted, companies_deleted, vacuumed, skipped.
+    """
+    out: dict[str, Any] = {"skipped": False, "jobs_deleted": 0, "runs_deleted": 0, "companies_deleted": 0, "vacuumed": False}
+    if not cfg.get("enabled", True):
+        out["skipped"] = True
+        return out
+
+    jobs_days = cfg.get("delete_jobs_last_seen_older_than_days")
+    runs_days = cfg.get("delete_runs_older_than_days")
+
+    with _conn() as c:
+        if isinstance(jobs_days, int) and jobs_days > 0:
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=jobs_days)).isoformat()
+            cur = c.execute("DELETE FROM jobs WHERE last_seen_at < ?", (cutoff,))
+            out["jobs_deleted"] = cur.rowcount or 0
+
+        if cfg.get("delete_orphan_companies"):
+            cur = c.execute(
+                """
+                DELETE FROM companies WHERE id NOT IN (SELECT DISTINCT company_id FROM jobs)
+                """
+            )
+            out["companies_deleted"] = cur.rowcount or 0
+
+        if isinstance(runs_days, int) and runs_days > 0:
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=runs_days)).isoformat()
+            cur = c.execute("DELETE FROM runs WHERE started_at < ?", (cutoff,))
+            out["runs_deleted"] = cur.rowcount or 0
+
+    if cfg.get("vacuum", True):
+        # VACUUM cannot run inside a transaction with pending changes in some cases; use a fresh connection.
+        vac = sqlite3.connect(str(_DB_PATH))
+        try:
+            vac.execute("VACUUM")
+            vac.commit()
+            out["vacuumed"] = True
+        finally:
+            vac.close()
+
+    return out

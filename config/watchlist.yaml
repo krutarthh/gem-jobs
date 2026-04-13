@@ -564,3 +564,14 @@ filters:
     - minimum 3 years
     - minimum 4 years
     - minimum 5 years
+
+# SQLite retention (keeps jobs.db small for GitHub Actions state branch / local runs)
+db_cleanup:
+  enabled: true
+  # Drop job rows not refreshed by a scrape in this many days (closed / stale listings)
+  delete_jobs_last_seen_older_than_days: 90
+  # Trim run history (optional; set null to never delete runs)
+  delete_runs_older_than_days: 180
+  # Remove company rows with no job rows after the job purge
+  delete_orphan_companies: true
+  vacuum: true
