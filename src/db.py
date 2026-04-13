@@ -209,7 +209,14 @@ def run_database_cleanup(cfg: dict) -> dict[str, Any]:
     Config from watchlist `db_cleanup:` (see load_db_cleanup).
     Returns stats: jobs_deleted, runs_deleted, companies_deleted, vacuumed, skipped.
     """
-    out: dict[str, Any] = {"skipped": False, "jobs_deleted": 0, "runs_deleted": 0, "companies_deleted": 0, "vacuumed": False}
+    out: dict[str, Any] = {
+        "skipped": False,
+        "jobs_deleted": 0,
+        "runs_deleted": 0,
+        "companies_deleted": 0,
+        "descriptions_cleared": 0,
+        "vacuumed": False,
+    }
     if not cfg.get("enabled", True):
         out["skipped"] = True
         return out
@@ -235,6 +242,10 @@ def run_database_cleanup(cfg: dict) -> dict[str, Any]:
             cutoff = (datetime.now(timezone.utc) - timedelta(days=runs_days)).isoformat()
             cur = c.execute("DELETE FROM runs WHERE started_at < ?", (cutoff,))
             out["runs_deleted"] = cur.rowcount or 0
+
+        if cfg.get("strip_job_descriptions", True):
+            cur = c.execute("UPDATE jobs SET description = NULL WHERE description IS NOT NULL")
+            out["descriptions_cleared"] = cur.rowcount or 0
 
     if cfg.get("vacuum", True):
         # VACUUM cannot run inside a transaction with pending changes in some cases; use a fresh connection.

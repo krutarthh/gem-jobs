@@ -147,5 +147,8 @@ def _default_db_cleanup() -> dict:
         "delete_jobs_last_seen_older_than_days": 90,
         "delete_runs_older_than_days": 180,
         "delete_orphan_companies": True,
+        # Clears stored JD HTML/text after each run; next scrape repopulates for live listings.
+        # Keeps jobs.db small (GitHub rejects files > 100 MB on normal git push).
+        "strip_job_descriptions": True,
         "vacuum": True,
     }

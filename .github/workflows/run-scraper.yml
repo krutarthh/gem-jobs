@@ -29,16 +29,25 @@ jobs:
       - name: Create data dir if missing
         run: mkdir -p data
 
-      # GitHub Actions cache keys are immutable (can't update the same key each run).
-      # Instead, persist the SQLite DB to a dedicated branch so it can be updated every run.
+      # Git LFS: jobs.db can exceed GitHub's 100 MB blob limit; LFS stores the binary separately.
+      # Cleanup (watchlist db_cleanup + strip_job_descriptions) also keeps the file small.
+      - name: Install Git LFS
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y git-lfs
+          git lfs install
+
+      # Shallow clone of state-db so we get the real SQLite file (works for plain git and LFS).
       - name: Restore DB from state branch (if exists)
+        env:
+          REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
         run: |
           echo "::group::Restore DB from state-db branch"
-          git fetch origin state-db || true
-          if git rev-parse --verify --quiet origin/state-db >/dev/null; then
-            git show origin/state-db:data/jobs.db > data/jobs.db || true
-          fi
-          if [ -f data/jobs.db ]; then
+          mkdir -p data
+          if git ls-remote --heads origin state-db 2>/dev/null | grep -q .; then
+            rm -rf .state-db-clone-tmp
+            git clone --depth 1 --branch state-db "$REPO_URL" .state-db-clone-tmp
+            cp .state-db-clone-tmp/data/jobs.db data/jobs.db
+            rm -rf .state-db-clone-tmp
             echo "jobs.db restored; size: $(du -h data/jobs.db | cut -f1)"
           else
             echo "no previous jobs.db found (first run)"
@@ -90,6 +99,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git fetch origin state-db || true
+          git worktree remove state-worktree --force 2>/dev/null || true
+          rm -rf state-worktree
           if git rev-parse --verify --quiet origin/state-db >/dev/null; then
             git worktree add state-worktree origin/state-db
           else
@@ -99,7 +110,11 @@ jobs:
           mkdir -p state-worktree/data
           cp data/jobs.db state-worktree/data/jobs.db
           cd state-worktree
-          git add -f data/jobs.db
+          git lfs install
+          if [ ! -f .gitattributes ] || ! grep -q 'data/jobs.db' .gitattributes 2>/dev/null; then
+            git lfs track "data/jobs.db"
+          fi
+          git add -f .gitattributes data/jobs.db
           git commit -m "Update jobs DB" || echo "No DB changes to commit"
           git push origin HEAD:state-db
           echo "::endgroup::"

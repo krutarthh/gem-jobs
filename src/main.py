@@ -211,6 +211,7 @@ def run_once() -> None:
             f"jobs_removed={cleanup_stats.get('jobs_deleted', 0)}",
             f"runs_removed={cleanup_stats.get('runs_deleted', 0)}",
             f"companies_removed={cleanup_stats.get('companies_deleted', 0)}",
+            f"descriptions_cleared={cleanup_stats.get('descriptions_cleared', 0)}",
             f"vacuum={cleanup_stats.get('vacuumed', False)}",
         )
 
