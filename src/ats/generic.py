@@ -19,6 +19,8 @@ LINK_PATTERNS = [
     re.compile(r"role", re.I),
     re.compile(r"career", re.I),
     re.compile(r"opening", re.I),
+    # JazzHR / Resumator boards on *.applytojob.com (job links look like /apply/{id}/{slug})
+    re.compile(r"/apply/[A-Za-z0-9]+/"),
 ]
 
 
@@ -44,12 +46,19 @@ def fetch_jobs(careers_url: str) -> list[JobDict]:
         full_url = urljoin(base, href)
         text = (a.get_text() or "").strip()
         # Heuristic: link looks like a job (path or text)
-        path_lower = urlparse(full_url).path.lower()
+        parsed = urlparse(full_url)
+        path_norm = parsed.path.rstrip("/").lower()
+        # JazzHR applytojob: skip bare /apply listing URL (not a single posting)
+        if "applytojob.com" in (parsed.netloc or "").lower() and path_norm in ("/apply", ""):
+            continue
+        path_lower = parsed.path.lower()
         text_lower = text.lower()
         if not any(p.search(path_lower) or p.search(text_lower) for p in LINK_PATTERNS):
             continue
         # Avoid external sites and common non-job links
         if "linkedin.com" in full_url or "indeed.com" in full_url or "glassdoor" in full_url:
+            continue
+        if "info.jazzhr.com" in full_url.lower() or "job-seekers" in path_lower:
             continue
         if len(text) < 3 or len(text) > 200:
             continue

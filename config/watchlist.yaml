@@ -107,6 +107,8 @@ companies:
     board_id: scaleai
   - name: Hugging Face
     careers_url: https://huggingface.co/jobs
+  - name: Xanadu
+    careers_url: https://xanadu.applytojob.com/apply
   # --- E‑commerce & marketplaces ---
   - name: Shopify
     careers_url: https://www.shopify.com/careers
