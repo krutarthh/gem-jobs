@@ -8,8 +8,6 @@ import sys
 from datetime import datetime, timezone
 from urllib.parse import urlparse, urlunparse
 
-import requests
-
 from src.config import DISCORD_REVIEW_WEBHOOK_URL, load_db_cleanup, load_filters, load_watchlist
 from src.db import (
     finish_run,
@@ -20,11 +18,10 @@ from src.db import (
     upsert_company,
     upsert_job,
 )
-from src.ats import detect_ats, detect_ats_from_html, fetch_jobs_for_company
+from src.ats import fetch_jobs_for_company
+from src.ats.resolve import resolve_ats_for_entry
 from src.filters import filter_jobs
 from src.notify import send_discord_new_jobs, send_discord_review_jobs
-
-REQUEST_TIMEOUT = 10
 
 
 def _dedupe_jobs_by_company_title_url(jobs: list[dict]) -> list[dict]:
@@ -41,20 +38,6 @@ def _dedupe_jobs_by_company_title_url(jobs: list[dict]) -> list[dict]:
         seen_key.add(key)
         out.append(j)
     return out
-
-
-def _resolve_redirect(url: str) -> str:
-    """Follow redirects and return final URL for ATS detection."""
-    try:
-        r = requests.get(
-            url,
-            timeout=REQUEST_TIMEOUT,
-            allow_redirects=True,
-            headers={"User-Agent": "GoldGemJobs/1.0"},
-        )
-        return r.url
-    except requests.RequestException:
-        return url
 
 
 def _normalize_external_id(external_id: str, job_url: str | None) -> str:
@@ -97,28 +80,7 @@ def run_once() -> None:
         careers_url = (entry.get("careers_url") or "").strip()
         if not careers_url:
             continue
-        # Use watchlist override if set (e.g. Toast -> Greenhouse board "toast")
-        ats_type = entry.get("ats_type")
-        board_id = entry.get("board_id")
-        if not ats_type or not board_id:
-            final_url = _resolve_redirect(careers_url)
-            ats_type, board_id = detect_ats(final_url)
-            if not board_id and ats_type != "generic":
-                ats_type, board_id = detect_ats(careers_url)
-            # If still generic, fetch page and scan for ATS (Greenhouse/Lever/Ashby) in HTML
-            if ats_type == "generic" or not board_id:
-                try:
-                    r = requests.get(
-                        careers_url,
-                        timeout=REQUEST_TIMEOUT,
-                        headers={"User-Agent": "GoldGemJobs/1.0"},
-                    )
-                    if r.ok:
-                        discovered_type, discovered_id = detect_ats_from_html(r.text)
-                        if discovered_id:
-                            ats_type, board_id = discovered_type, discovered_id
-                except requests.RequestException:
-                    pass
+        ats_type, board_id = resolve_ats_for_entry(entry)
         company_id = upsert_company(
             name=name,
             careers_url=careers_url,
