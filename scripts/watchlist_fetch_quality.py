@@ -6,13 +6,14 @@ path as the scraper (src.main). Use for CI or local quality checks.
 Run from repo root:
   python scripts/watchlist_fetch_quality.py
   python scripts/watchlist_fetch_quality.py --json
+  python scripts/watchlist_fetch_quality.py --save-baseline baseline.json
+  python scripts/watchlist_fetch_quality.py --baseline baseline.json --min-jobs 5
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -28,6 +29,25 @@ from src.config import load_watchlist  # noqa: E402
 def main() -> int:
     parser = argparse.ArgumentParser(description="Per-company job fetch counts (scraper parity)")
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON summary")
+    parser.add_argument(
+        "--save-baseline",
+        metavar="PATH",
+        help="Write the current per-company counts to PATH as JSON (use for future regression checks)",
+    )
+    parser.add_argument(
+        "--baseline",
+        metavar="PATH",
+        help="Compare counts against a previously saved baseline JSON file",
+    )
+    parser.add_argument(
+        "--min-jobs",
+        type=int,
+        default=0,
+        help=(
+            "Regression threshold: non-zero exit if any company present in --baseline with "
+            ">= N jobs now returns 0. Requires --baseline. (default 0 = disabled)"
+        ),
+    )
     args = parser.parse_args()
 
     companies = load_watchlist()
@@ -134,6 +154,39 @@ def main() -> int:
     if zero and not args.json:
         print(f"\nCompanies with 0 jobs ({len(zero)}): {', '.join(zero[:20])}" + (" …" if len(zero) > 20 else ""))
 
+    current_counts = {r["name"]: r.get("jobs") for r in rows if isinstance(r.get("jobs"), int)}
+
+    if args.save_baseline:
+        try:
+            with open(args.save_baseline, "w") as f:
+                json.dump({"counts": current_counts}, f, indent=2, sort_keys=True)
+            print(f"\nBaseline written to {args.save_baseline} ({len(current_counts)} companies)")
+        except OSError as e:
+            print(f"\n[warn] could not write baseline: {e}")
+
+    regressions: list[str] = []
+    if args.baseline:
+        try:
+            with open(args.baseline, "r") as f:
+                base = json.load(f)
+            baseline_counts = base.get("counts") or {}
+        except (OSError, ValueError) as e:
+            print(f"\n[warn] could not read baseline {args.baseline}: {e}")
+            baseline_counts = {}
+        threshold = max(1, int(args.min_jobs or 0))
+        for name, old in baseline_counts.items():
+            if not isinstance(old, int) or old < threshold:
+                continue
+            new = current_counts.get(name)
+            if new is None or new == 0:
+                regressions.append(f"  {name}: {old} -> {new if new is not None else 'missing'}")
+        if regressions:
+            print(f"\nRegressions against baseline (>= {threshold} jobs dropped to 0):")
+            for line in regressions:
+                print(line)
+
+    if regressions and args.min_jobs > 0:
+        return 2
     return 1 if err_count else 0
 
 

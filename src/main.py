@@ -89,6 +89,9 @@ def run_once() -> None:
         )
         companies_checked += 1
         jobs = fetch_jobs_for_company(ats_type, board_id, careers_url)
+        # Surface zero-job companies so CI logs catch silent watchlist rot.
+        if not jobs:
+            print(f"[warn] 0-jobs: {name} (ats={ats_type or 'unknown'} board={board_id or '-'})", flush=True)
         for j in jobs:
             raw_id = j.get("id")
             if raw_id is None:
@@ -123,6 +126,11 @@ def run_once() -> None:
         require_location_field_match=filters.get("require_location_field_match", False),
         entry_level_only=filters.get("entry_level_only", True),
         jd_filter_mode=jd_mode,
+        match_mode=filters.get("match_mode", "substring"),
+        title_synonym_groups=filters.get("title_synonym_groups"),
+        location_accept_aliases=filters.get("location_accept_aliases"),
+        allow_title_canada_signal=filters.get("allow_title_canada_signal", True),
+        newgrad_title_rescue=filters.get("newgrad_title_rescue", True),
     )
     filtered = filter_jobs(
         new_jobs,

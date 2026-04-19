@@ -109,6 +109,8 @@ companies:
     careers_url: https://huggingface.co/jobs
   - name: Xanadu
     careers_url: https://xanadu.applytojob.com/apply
+    ats_type: jazzhr
+    board_id: xanadu
   # --- E‑commerce & marketplaces ---
   - name: Shopify
     careers_url: https://www.shopify.com/careers
@@ -133,7 +135,7 @@ companies:
     board_id: lyft
   # --- Big tech (often Workday/custom; we still track URL) ---
   - name: Google
-    careers_url: https://careers.google.com/jobs
+    careers_url: https://www.google.com/about/careers/applications/jobs/results/
   - name: Meta
     careers_url: https://www.metacareers.com/jobs
   - name: Amazon
@@ -159,8 +161,8 @@ companies:
     board_id: okta
   - name: CrowdStrike
     careers_url: https://www.crowdstrike.com/careers/
-    ats_type: spa
-    board_id: https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers
+    ats_type: workday
+    board_id: crowdstrike|crowdstrikecareers|wd5
   - name: Palo Alto Networks
     careers_url: https://jobs.paloaltonetworks.com/
   - name: Cloudflare
@@ -319,10 +321,14 @@ companies:
     careers_url: https://jobs.intuit.com/
   - name: Autodesk
     careers_url: https://www.autodesk.com/careers/
+    ats_type: workday
+    board_id: autodesk|Ext|wd1
   - name: Veeva
     careers_url: https://careers.veeva.com/
   - name: Ciena
     careers_url: https://www.ciena.com/careers/
+    ats_type: workday
+    board_id: ciena|Careers|wd5
   - name: ServiceNow
     careers_url: https://careers.servicenow.com/
   - name: Splunk

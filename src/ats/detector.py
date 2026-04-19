@@ -23,6 +23,40 @@ ASHBY_PATTERNS = [
     (re.compile(r"jobs\.ashbyhq\.com/([^/?\"')\s]+)", re.I), "ashby", 1),
     (re.compile(r"ashbyhq\.com/[^/]+/([^/?\"')\s]+)", re.I), "ashby", 1),
 ]
+# Workday: board_id packs "<tenant>|<site>|wd<N>" so workday.fetch_jobs knows the host.
+WORKDAY_RE = re.compile(
+    r"([a-z0-9-]+)\.(wd\d+)\.myworkdayjobs\.com/(?:[a-z-]{2,5}/)?([^/?\"')\s]+)",
+    re.I,
+)
+# SmartRecruiters: slug comes from public careers subdomain or API base.
+SMARTRECRUITERS_PATTERNS = [
+    (re.compile(r"careers\.smartrecruiters\.com/([^/?\"')\s]+)", re.I), "smartrecruiters", 1),
+    (re.compile(r"jobs\.smartrecruiters\.com/([^/?\"')\s]+)", re.I), "smartrecruiters", 1),
+    (re.compile(r"api\.smartrecruiters\.com/v1/companies/([^/?\"')\s]+)/postings", re.I), "smartrecruiters", 1),
+]
+# JazzHR / applytojob: subdomain is the board id.
+JAZZHR_RE = re.compile(r"([a-z0-9-]+)\.applytojob\.com", re.I)
+
+
+def _detect_workday(text: str) -> Result | None:
+    m = WORKDAY_RE.search(text)
+    if not m:
+        return None
+    tenant, wd, site = m.group(1), m.group(2).lower(), m.group(3)
+    site = site.split("?")[0].rstrip("/")
+    if not site or len(site) > 80:
+        return None
+    return "workday", f"{tenant}|{site}|{wd}"
+
+
+def _detect_jazzhr(text: str) -> Result | None:
+    m = JAZZHR_RE.search(text)
+    if not m:
+        return None
+    sub = m.group(1).lower()
+    if sub in {"info", "www", "api"} or len(sub) > 60:
+        return None
+    return "jazzhr", sub
 
 
 def detect_ats_from_html(html: str) -> Result:
@@ -51,6 +85,18 @@ def detect_ats_from_html(html: str) -> Result:
             board_id = m.group(group).strip("'\"").split("?")[0].rstrip("/")
             if board_id and len(board_id) < 80:
                 return ats_type, board_id
+    for pattern, ats_type, group in SMARTRECRUITERS_PATTERNS:
+        m = pattern.search(text)
+        if m:
+            board_id = m.group(group).strip("'\"").split("?")[0].rstrip("/")
+            if board_id and len(board_id) < 80:
+                return ats_type, board_id
+    wd = _detect_workday(text)
+    if wd is not None:
+        return wd
+    jz = _detect_jazzhr(text)
+    if jz is not None:
+        return jz
     return "generic", None
 
 
@@ -83,5 +129,16 @@ def detect_ats(careers_url: str) -> Result:
         if m:
             return ats_type, m.group(group)
 
-    # Workday, SmartRecruiters, custom: could add more patterns later
+    for pattern, ats_type, group in SMARTRECRUITERS_PATTERNS:
+        m = pattern.search(full_url)
+        if m:
+            return ats_type, m.group(group)
+
+    wd = _detect_workday(full_url)
+    if wd is not None:
+        return wd
+    jz = _detect_jazzhr(full_url)
+    if jz is not None:
+        return jz
+
     return "generic", None

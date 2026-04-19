@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Any
 
 import yaml
 from dotenv import load_dotenv
@@ -57,6 +58,18 @@ def load_filters() -> dict:
                 out.append(str(x))
         return out
 
+    def _ensure_group_list(raw: Any, default: list[list[str]]) -> list[list[str]]:
+        if not isinstance(raw, list):
+            return default
+        out: list[list[str]] = []
+        for group in raw:
+            if isinstance(group, list):
+                out.append(_ensure_str_list(group, []))
+            elif isinstance(group, dict) and "keywords" in group:
+                out.append(_ensure_str_list(group.get("keywords"), []))
+        # Drop empty groups.
+        return [g for g in out if g] or default
+
     locs = filters.get("locations", defaults["locations"])
     return {
         "locations": _ensure_str_list(locs, defaults["locations"]),
@@ -69,6 +82,20 @@ def load_filters() -> dict:
         "entry_level_only": filters.get("entry_level_only", defaults["entry_level_only"]),
         "use_jd_experience_filter": filters.get("use_jd_experience_filter", defaults["use_jd_experience_filter"]),
         "jd_filter_mode": filters.get("jd_filter_mode", defaults["jd_filter_mode"]),
+        "match_mode": filters.get("match_mode", defaults["match_mode"]),
+        "title_synonym_groups": _ensure_group_list(
+            filters.get("title_synonym_groups"), defaults["title_synonym_groups"]
+        ),
+        "location_accept_aliases": _ensure_str_list(
+            filters.get("location_accept_aliases", defaults["location_accept_aliases"]),
+            defaults["location_accept_aliases"],
+        ),
+        "allow_title_canada_signal": filters.get(
+            "allow_title_canada_signal", defaults["allow_title_canada_signal"]
+        ),
+        "newgrad_title_rescue": filters.get(
+            "newgrad_title_rescue", defaults["newgrad_title_rescue"]
+        ),
     }
 
 
@@ -122,6 +149,27 @@ def _default_filters() -> dict:
         "entry_level_only": True,
         "use_jd_experience_filter": True,
         "jd_filter_mode": "standard",
+        "match_mode": "word",
+        "title_synonym_groups": [
+            ["software engineer", "software developer", "swe", "sde", "application engineer"],
+            ["backend", "back end", "full stack", "frontend", "front end", "mobile", "ios", "android"],
+            ["data engineer", "analytics engineer", "data scientist", "applied scientist"],
+            ["ml engineer", "machine learning engineer", "ai engineer", "ai resident", "research engineer"],
+            ["platform engineer", "infrastructure engineer", "systems engineer", "site reliability", "sre", "devops", "cloud engineer"],
+        ],
+        "location_accept_aliases": [
+            "united states & canada",
+            "united states and canada",
+            "us & canada",
+            "us and canada",
+            "americas",
+            "north america",
+            "global",
+            "worldwide",
+            "anywhere",
+        ],
+        "allow_title_canada_signal": True,
+        "newgrad_title_rescue": True,
     }
 
 

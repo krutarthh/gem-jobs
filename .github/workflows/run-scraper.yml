@@ -69,9 +69,19 @@ jobs:
         id: scrape
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_REVIEW_WEBHOOK_URL: ${{ secrets.DISCORD_REVIEW_WEBHOOK_URL }}
         run: python -m src.main
 
       # DB pruning and VACUUM run inside python -m src.main (watchlist db_cleanup:).
+
+      # Quick visibility on which filter stages rejected the most rows this run.
+      # --discord posts the one-line summary to DISCORD_REVIEW_WEBHOOK_URL when set.
+      - name: Filter rejection breakdown
+        if: success()
+        env:
+          DISCORD_REVIEW_WEBHOOK_URL: ${{ secrets.DISCORD_REVIEW_WEBHOOK_URL }}
+        run: |
+          python scripts/filter_breakdown.py --days 1 --sample 3 --discord || true
 
       - name: Log state before cache save
         if: success()

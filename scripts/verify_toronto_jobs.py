@@ -68,6 +68,11 @@ def main() -> None:
             entry_level_only=filters.get("entry_level_only", True),
             use_jd_experience_filter=filters.get("use_jd_experience_filter", True),
             jd_filter_mode=filters.get("jd_filter_mode", "standard"),
+            match_mode=filters.get("match_mode", "substring"),
+            title_synonym_groups=filters.get("title_synonym_groups"),
+            location_accept_aliases=filters.get("location_accept_aliases"),
+            allow_title_canada_signal=filters.get("allow_title_canada_signal", True),
+            newgrad_title_rescue=filters.get("newgrad_title_rescue", True),
         )
 
         total_fetched += len(jobs)

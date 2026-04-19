@@ -27,6 +27,44 @@ DEFAULT_EXCLUDE_KEYWORDS = [
     "senior software", "staff software", "principal engineer", "tech lead",
 ]
 
+# Phrases that, when present in the job location text, should be treated as Canada-accepting
+# (e.g. a JD listing "United States & Canada" or "Americas" is usually a global req hiring in Canada too).
+DEFAULT_LOCATION_ACCEPT_ALIASES = [
+    "united states & canada",
+    "united states and canada",
+    "us & canada",
+    "us and canada",
+    "americas",
+    "north america",
+    "global",
+    "worldwide",
+    "anywhere",
+]
+
+# Title tokens that signal a new-grad-safe role (skip JD senior filter when any of these appears
+# in the title, because many new-grad JDs reuse senior boilerplate copy).
+TITLE_LEVEL_RESCUE_RE = re.compile(
+    r"(?ix)"
+    r"\b(?:intern(?:ship)?s?|co[-\s]?op|new\s+grad(?:uate)?s?|junior|jr\.?|associate|"
+    r"early[-\s]career|recent\s+graduate|campus\s+(?:hire|recruit)|"
+    r"university\s+grad|college\s+grad|graduate\s+program|rotational\s+program|"
+    r"fellow(?:ship)?|entry[-\s]level|apprentice(?:ship)?|"
+    r"level\s*1|l1|l2|l3|e3|ic1|ic2|"
+    r"(?:swe|sde|software\s+(?:engineer|developer))\s*(?:i|1))\b"
+)
+
+# Title signals the role is based in Canada — skip strict location check when any of these match
+# (e.g. "Software Engineer, Toronto" even when location field says just "Hybrid").
+TITLE_CANADA_RE = re.compile(
+    r"(?ix)"
+    r"\b(?:canada|canadian|toronto|greater\s+toronto|ontario|vancouver|"
+    r"montreal|mont?real|quebec|calgary|ottawa|waterloo|edmonton|halifax|"
+    r"remote\s+canada|canada\s+remote)\b"
+)
+
+# Separators used to split multi-location strings into discrete region tokens.
+_LOCATION_SPLIT_RE = re.compile(r"[|/;]|,\s+|\s+and\s+|\s+&\s+|\s+or\s+")
+
 
 def _normalize(s: str | None | Any) -> str:
     """Normalize for matching: strip, lower, and remove accents (e.g. Montréal -> montreal)."""
@@ -47,8 +85,9 @@ def _normalize(s: str | None | Any) -> str:
 def _location_to_string(location: Any) -> str:
     """
     Normalize job location to a single string for matching.
-    Jobs may have location as: str, list of str (multiple locations), or dict (e.g. {"name": "..."}).
-    We merge all into one string so Canada/Toronto matching works when a job has multiple locations.
+    Jobs may have location as: str, list of str, or dict (e.g. {"name": "..."}).
+    We merge all into one string (pipe-joined) so downstream matchers can split it again
+    or treat the whole blob as a single searchable blob.
     """
     if location is None:
         return ""
@@ -59,7 +98,7 @@ def _location_to_string(location: Any) -> str:
                 parts.append(item.get("name") or item.get("location") or item.get("value") or "")
             elif item is not None and str(item).strip():
                 parts.append(str(item).strip())
-        return " ".join(parts)
+        return " | ".join(p for p in parts if p)
     if isinstance(location, dict):
         return (
             (location.get("name") or location.get("location") or location.get("value")) or ""
@@ -67,7 +106,40 @@ def _location_to_string(location: Any) -> str:
     return (str(location) or "").strip()
 
 
-def _matches_any(text: str, keywords: list[str]) -> bool:
+def _split_location_parts(location_str: str) -> list[str]:
+    """Break a location string like "Toronto, ON | Remote - US" into discrete chunks."""
+    if not location_str:
+        return []
+    pieces = _LOCATION_SPLIT_RE.split(location_str)
+    return [p.strip() for p in pieces if p and p.strip()]
+
+
+def _escape_word_keyword(kw: str) -> str:
+    """Escape regex metachars in a keyword, but preserve spaces so multi-word phrases work."""
+    return re.escape(kw).replace("\\ ", "\\s+")
+
+
+def _compile_word_pattern(keywords: list[str]) -> re.Pattern | None:
+    if not keywords:
+        return None
+    parts = []
+    for k in keywords:
+        norm = _normalize(k)
+        if not norm:
+            continue
+        parts.append(_escape_word_keyword(norm))
+    if not parts:
+        return None
+    pat = r"(?<![A-Za-z0-9])(?:" + "|".join(parts) + r")(?![A-Za-z0-9])"
+    return re.compile(pat)
+
+
+def _matches_any(text: str, keywords: list[str], *, mode: str = "substring") -> bool:
+    """
+    Return True if any keyword appears in ``text``.
+    mode=substring: classic contains match (fast, legacy behavior).
+    mode=word: word-boundary regex match (avoids "lead" matching "leadership").
+    """
     # #region agent log
     non_str = [(i, type(k).__name__, repr(k)) for i, k in enumerate(keywords) if not isinstance(k, str)]
     if non_str:
@@ -76,15 +148,67 @@ def _matches_any(text: str, keywords: list[str]) -> bool:
     if not keywords:
         return True
     t = _normalize(text)
+    if mode == "word":
+        pat = _compile_word_pattern(keywords)
+        return bool(pat and pat.search(t))
     return any(_normalize(k) in t for k in keywords)
 
 
-def _contains_any(text: str, keywords: list[str]) -> bool:
-    """Return True if text (normalized) contains any of the keywords."""
+def _contains_any(text: str, keywords: list[str], *, mode: str = "substring") -> bool:
+    """True if text contains any keyword. Same ``mode`` semantics as ``_matches_any``."""
     if not keywords:
         return False
     t = _normalize(text)
+    if mode == "word":
+        pat = _compile_word_pattern(keywords)
+        return bool(pat and pat.search(t))
     return any(_normalize(k) in t for k in keywords)
+
+
+def _location_matches(
+    location_str: str,
+    title_dept: str,
+    locations: list[str],
+    *,
+    accept_aliases: list[str] | None = None,
+    allow_title_canada_signal: bool = True,
+) -> bool:
+    """
+    True if the job's location (or title/department) signals a match with our target regions.
+    Steps:
+      1. Title signals (e.g. "... - Toronto") short-circuit to True.
+      2. Any alias phrase (e.g. "Americas", "US & Canada") in the location string short-circuits True.
+      3. Each chunk in the location string is matched against ``locations``; ANY match passes.
+    """
+    if allow_title_canada_signal and TITLE_CANADA_RE.search(title_dept or ""):
+        return True
+    location_norm = _normalize(location_str)
+    if location_norm:
+        aliases = accept_aliases if accept_aliases is not None else DEFAULT_LOCATION_ACCEPT_ALIASES
+        for alias in aliases:
+            if alias and _normalize(alias) in location_norm:
+                return True
+    chunks = _split_location_parts(location_str) or [location_str]
+    for chunk in chunks:
+        if _matches_any(chunk, locations, mode="substring"):
+            return True
+    # Also run the combined blob as a last resort (catches "United States, Canada" when split
+    # punctuation variants differ).
+    return _matches_any(location_str, locations, mode="substring")
+
+
+def _title_signals_newgrad(title_dept: str) -> bool:
+    return bool(title_dept) and TITLE_LEVEL_RESCUE_RE.search(title_dept) is not None
+
+
+def _title_matches_synonyms(title_dept: str, synonym_groups: list[list[str]] | None) -> bool:
+    """True if title/department hits at least one phrase in any synonym group (word mode)."""
+    if not synonym_groups:
+        return False
+    for group in synonym_groups:
+        if _matches_any(title_dept, group, mode="word"):
+            return True
+    return False
 
 
 def _strip_html(html: str) -> str:
@@ -135,8 +259,6 @@ def _jd_asks_senior_experience(
 ) -> bool:
     """
     Return True if the JD requires professional experience or 3+ years (generic).
-    Exclude if JD asks for any professional experience (even 1 year). Internship experience is allowed.
-    New-grad/entry-level JDs: do not exclude solely on bare "1+ years" or "2+ years" (no "professional").
     When include_professional_phrases is False (yoe_and_senior_only mode), skip boilerplate
     "professional experience" patterns and only apply senior-level and 3+ year YOE heuristics.
     """
@@ -176,7 +298,6 @@ def _parse_posted_at(posted_at: str | None) -> datetime | None:
     try:
         s = str(posted_at).strip()
         if "T" in s:
-            # Drop timezone suffix for simplicity (treat as UTC)
             if s.endswith("Z") or "+" in s or "-" in s[-6:]:
                 return datetime.fromisoformat(s.replace("Z", "+00:00"))
             return datetime.fromisoformat(s).replace(tzinfo=timezone.utc)
@@ -202,6 +323,11 @@ def filter_failure_reason(
     entry_level_only: bool = True,
     use_jd_experience_filter: bool = True,
     jd_filter_mode: str = "standard",
+    match_mode: str = "substring",
+    title_synonym_groups: list[list[str]] | None = None,
+    location_accept_aliases: list[str] | None = None,
+    allow_title_canada_signal: bool = True,
+    newgrad_title_rescue: bool = True,
 ) -> str | None:
     """
     Return None if the job passes all filters; otherwise the first failing stage name.
@@ -210,32 +336,60 @@ def filter_failure_reason(
     """
     title = _normalize(job.get("title") or "")
     location_str = _location_to_string(job.get("location"))
-    location = _normalize(location_str)
     department = _normalize(job.get("department") or "")
-    combined = f"{title} {location} {department}"
     title_dept = f"{title} {department}"
 
+    # --- Location check -------------------------------------------------------
+    combined_for_loc = f"{title_dept} {_normalize(location_str)}"
     if allow_empty_location and not location_str.strip():
         pass
-    elif not _matches_any(combined, locations):
+    elif not (
+        _location_matches(
+            location_str,
+            title_dept,
+            locations,
+            accept_aliases=location_accept_aliases,
+            allow_title_canada_signal=allow_title_canada_signal,
+        )
+        or _matches_any(combined_for_loc, locations, mode="substring")
+    ):
         return "location"
-    if require_location_field_match and location_str.strip() and not _matches_any(location_str, locations):
+    if (
+        require_location_field_match
+        and location_str.strip()
+        and not _location_matches(
+            location_str,
+            "",  # disable title-signal rescue here; this toggle is specifically about the field
+            locations,
+            accept_aliases=location_accept_aliases,
+            allow_title_canada_signal=False,
+        )
+    ):
         return "location_field"
-    if entry_level_only and not _matches_any(title_dept, level_keywords):
+
+    # --- Level / title --------------------------------------------------------
+    if entry_level_only and not _matches_any(title_dept, level_keywords, mode=match_mode):
         return "entry_level"
-    if not _matches_any(title_dept, title_keywords):
+    if not (
+        _matches_any(title_dept, title_keywords, mode=match_mode)
+        or _title_matches_synonyms(title_dept, title_synonym_groups)
+    ):
         return "title_keywords"
 
+    # --- Exclude --------------------------------------------------------------
     exclude = exclude_keywords if exclude_keywords is not None else DEFAULT_EXCLUDE_KEYWORDS
-    if _contains_any(title_dept, exclude):
+    if _contains_any(title_dept, exclude, mode=match_mode):
         return "exclude_keywords"
 
+    # --- JD experience (skip for rescued new-grad titles) --------------------
     if use_jd_experience_filter:
         desc = job.get("description") if isinstance(job.get("description"), str) else None
         prof = _jd_include_professional_phrases(jd_filter_mode)
-        if _jd_asks_senior_experience(desc, include_professional_phrases=prof):
-            return "jd_experience"
+        if not (newgrad_title_rescue and _title_signals_newgrad(title_dept)):
+            if _jd_asks_senior_experience(desc, include_professional_phrases=prof):
+                return "jd_experience"
 
+    # --- Recency --------------------------------------------------------------
     if max_days_since_posted is not None and max_days_since_posted > 0:
         posted = _parse_posted_at(job.get("posted_at"))
         if posted is not None:
@@ -257,18 +411,13 @@ def passes_filters(
     entry_level_only: bool = True,
     use_jd_experience_filter: bool = True,
     jd_filter_mode: str = "standard",
+    match_mode: str = "substring",
+    title_synonym_groups: list[list[str]] | None = None,
+    location_accept_aliases: list[str] | None = None,
+    allow_title_canada_signal: bool = True,
+    newgrad_title_rescue: bool = True,
 ) -> bool:
-    """
-    Return True if job passes all filters (new-grad only, no senior/staff, optional recency).
-    - Location: title/location/department contains one of locations (location can be str or list of
-      locations; multiple locations are merged so e.g. Canada/Toronto is matched if any location matches).
-      If allow_empty_location is True, missing/empty location is treated as passing the location check.
-      If require_location_field_match is True, the job's location field must also contain a location keyword.
-    - Level: title or department contains one of level_keywords (intern, new grad, SWE I, etc.)
-    - Keywords: title or department contains one of title_keywords
-    - Exclude: title or department must NOT contain any of exclude_keywords (senior, staff, etc.)
-    - Recency: if max_days_since_posted set and job has posted_at, reject if older than that
-    """
+    """Return True if job passes all filters (new-grad only, no senior/staff, optional recency)."""
     return (
         filter_failure_reason(
             job,
@@ -282,6 +431,11 @@ def passes_filters(
             entry_level_only=entry_level_only,
             use_jd_experience_filter=use_jd_experience_filter,
             jd_filter_mode=jd_filter_mode,
+            match_mode=match_mode,
+            title_synonym_groups=title_synonym_groups,
+            location_accept_aliases=location_accept_aliases,
+            allow_title_canada_signal=allow_title_canada_signal,
+            newgrad_title_rescue=newgrad_title_rescue,
         )
         is None
     )
@@ -299,6 +453,11 @@ def filter_jobs(
     entry_level_only: bool = True,
     use_jd_experience_filter: bool = True,
     jd_filter_mode: str = "standard",
+    match_mode: str = "substring",
+    title_synonym_groups: list[list[str]] | None = None,
+    location_accept_aliases: list[str] | None = None,
+    allow_title_canada_signal: bool = True,
+    newgrad_title_rescue: bool = True,
 ) -> list[dict[str, Any]]:
     """Return only jobs that pass all filters (new-grad only, no senior, optional recency)."""
     # #region agent log
@@ -321,5 +480,10 @@ def filter_jobs(
             entry_level_only=entry_level_only,
             use_jd_experience_filter=use_jd_experience_filter,
             jd_filter_mode=jd_filter_mode,
+            match_mode=match_mode,
+            title_synonym_groups=title_synonym_groups,
+            location_accept_aliases=location_accept_aliases,
+            allow_title_canada_signal=allow_title_canada_signal,
+            newgrad_title_rescue=newgrad_title_rescue,
         )
     ]
