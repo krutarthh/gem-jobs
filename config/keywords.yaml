@@ -1,0 +1,85 @@
+# Curated tech vocabulary for JD keyword extraction (Phase 3C).
+# Each entry maps a display label to a list of regex-safe phrases that should
+# match (case-insensitive, word-boundary). Add or remove freely.
+
+keywords:
+  # Languages
+  Python: ["python"]
+  Go: ["golang", "go lang"]
+  Java: ["java"]
+  Kotlin: ["kotlin"]
+  Swift: ["swift"]
+  C++: ["c\\+\\+", "cpp"]
+  C#: ["c#", "csharp"]
+  Rust: ["rust"]
+  TypeScript: ["typescript", "ts"]
+  JavaScript: ["javascript", "js"]
+  Ruby: ["ruby on rails", "ruby", "rails"]
+  Scala: ["scala"]
+  PHP: ["php", "laravel"]
+  R: ["r language"]
+
+  # Frontend
+  React: ["react", "react.js", "reactjs"]
+  Next.js: ["next.js", "nextjs"]
+  Vue: ["vue", "vue.js", "nuxt"]
+  Angular: ["angular"]
+  Svelte: ["svelte", "sveltekit"]
+  HTML/CSS: ["html", "css", "tailwind"]
+  GraphQL: ["graphql", "apollo"]
+
+  # Backend / APIs
+  Node.js: ["node.js", "nodejs"]
+  REST: ["rest api", "restful"]
+  gRPC: ["grpc"]
+  Django: ["django"]
+  Flask: ["flask"]
+  FastAPI: ["fastapi"]
+  Spring: ["spring boot", "spring"]
+
+  # Mobile
+  iOS: ["ios"]
+  Android: ["android"]
+  React Native: ["react native"]
+  Flutter: ["flutter"]
+
+  # Data
+  PostgreSQL: ["postgres", "postgresql"]
+  MySQL: ["mysql"]
+  MongoDB: ["mongo", "mongodb"]
+  Redis: ["redis"]
+  Elasticsearch: ["elastic", "elasticsearch"]
+  Kafka: ["kafka"]
+  Spark: ["spark", "pyspark"]
+  Airflow: ["airflow"]
+  dbt: ["dbt"]
+  Snowflake: ["snowflake"]
+  BigQuery: ["bigquery"]
+
+  # Cloud / Infra
+  AWS: ["aws", "amazon web services", "ec2", "s3", "lambda", "dynamodb"]
+  GCP: ["gcp", "google cloud"]
+  Azure: ["azure"]
+  Kubernetes: ["kubernetes", "k8s"]
+  Docker: ["docker", "container"]
+  Terraform: ["terraform"]
+  Ansible: ["ansible"]
+  CI/CD: ["ci/cd", "continuous integration", "continuous delivery"]
+  GitHub Actions: ["github actions"]
+  Linux: ["linux"]
+  Microservices: ["microservices", "micro-services"]
+  Serverless: ["serverless"]
+
+  # AI / ML
+  PyTorch: ["pytorch"]
+  TensorFlow: ["tensorflow"]
+  LLM: ["llm", "large language model", "transformer"]
+  RAG: ["retrieval augmented generation", "rag"]
+  CUDA: ["cuda"]
+  ONNX: ["onnx"]
+
+  # Practices / methodology
+  Agile: ["agile", "scrum"]
+  TDD: ["tdd", "test driven"]
+  Distributed Systems: ["distributed systems"]
+  Functional: ["functional programming"]

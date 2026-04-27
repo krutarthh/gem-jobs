@@ -36,6 +36,49 @@ SMARTRECRUITERS_PATTERNS = [
 ]
 # JazzHR / applytojob: subdomain is the board id.
 JAZZHR_RE = re.compile(r"([a-z0-9-]+)\.applytojob\.com", re.I)
+# Workable: apply.workable.com/<slug> or <slug>.workable.com.
+WORKABLE_PATTERNS = [
+    (re.compile(r"apply\.workable\.com/([a-z0-9-]+)", re.I), "workable", 1),
+    (re.compile(r"jobs\.workable\.com/([a-z0-9-]+)", re.I), "workable", 1),
+    (re.compile(r"([a-z0-9-]+)\.workable\.com", re.I), "workable", 1),
+]
+# Recruitee: <slug>.recruitee.com.
+RECRUITEE_RE = re.compile(r"([a-z0-9-]+)\.recruitee\.com", re.I)
+# iCIMS: jobs-<tenant>.icims.com or careers-<tenant>.icims.com or <tenant>.icims.com.
+ICIMS_RE = re.compile(r"(?:careers-|jobs-)?([a-z0-9-]+)\.icims\.com", re.I)
+
+
+def _detect_workable(text: str) -> Result | None:
+    for pattern, ats_type, group in WORKABLE_PATTERNS:
+        m = pattern.search(text)
+        if m:
+            slug = m.group(group).strip("'\"").lower()
+            # Skip the marketing host www.workable.com / apply.workable.com themselves.
+            if slug in {"www", "apply", "jobs", "api", "static"}:
+                continue
+            if 1 < len(slug) <= 60:
+                return ats_type, slug
+    return None
+
+
+def _detect_recruitee(text: str) -> Result | None:
+    m = RECRUITEE_RE.search(text)
+    if not m:
+        return None
+    slug = m.group(1).lower()
+    if slug in {"www", "api", "support"} or len(slug) > 60:
+        return None
+    return "recruitee", slug
+
+
+def _detect_icims(text: str) -> Result | None:
+    m = ICIMS_RE.search(text)
+    if not m:
+        return None
+    slug = m.group(1).lower()
+    if slug in {"www", "api", "static", "support"} or len(slug) < 2 or len(slug) > 80:
+        return None
+    return "icims", slug
 
 
 def _detect_workday(text: str) -> Result | None:
@@ -97,6 +140,15 @@ def detect_ats_from_html(html: str) -> Result:
     jz = _detect_jazzhr(text)
     if jz is not None:
         return jz
+    wk = _detect_workable(text)
+    if wk is not None:
+        return wk
+    rc = _detect_recruitee(text)
+    if rc is not None:
+        return rc
+    ic = _detect_icims(text)
+    if ic is not None:
+        return ic
     return "generic", None
 
 
@@ -140,5 +192,14 @@ def detect_ats(careers_url: str) -> Result:
     jz = _detect_jazzhr(full_url)
     if jz is not None:
         return jz
+    wk = _detect_workable(full_url)
+    if wk is not None:
+        return wk
+    rc = _detect_recruitee(full_url)
+    if rc is not None:
+        return rc
+    ic = _detect_icims(full_url)
+    if ic is not None:
+        return ic
 
     return "generic", None

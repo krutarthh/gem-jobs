@@ -4,6 +4,7 @@ Run once: python -m src.main
 """
 
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from urllib.parse import urlparse, urlunparse
@@ -12,7 +13,9 @@ from src.config import DISCORD_REVIEW_WEBHOOK_URL, load_db_cleanup, load_filters
 from src.db import (
     finish_run,
     get_new_jobs_since,
+    has_notified_key,
     init_db,
+    remember_notified_keys,
     run_database_cleanup,
     start_run,
     upsert_company,
@@ -21,7 +24,9 @@ from src.db import (
 from src.ats import fetch_jobs_for_company
 from src.ats.resolve import resolve_ats_for_entry
 from src.filters import filter_jobs
+from src.keywords import annotate_with_keywords
 from src.notify import send_discord_new_jobs, send_discord_review_jobs
+from src.scoring import rank_jobs
 
 
 def _dedupe_jobs_by_company_title_url(jobs: list[dict]) -> list[dict]:
@@ -38,6 +43,15 @@ def _dedupe_jobs_by_company_title_url(jobs: list[dict]) -> list[dict]:
         seen_key.add(key)
         out.append(j)
     return out
+
+
+def _normalized_notify_key(job: dict) -> str:
+    """Stable identity that survives repostings under different external_ids."""
+    company = (job.get("company_name") or "").strip().lower()
+    title = (job.get("title") or "").strip().lower()
+    # Collapse runs of whitespace/punct so "Software Engineer, II" == "software engineer ii".
+    title = re.sub(r"[^a-z0-9]+", " ", title).strip()
+    return f"{company}|{title}"
 
 
 def _normalize_external_id(external_id: str, job_url: str | None) -> str:
@@ -131,6 +145,7 @@ def run_once() -> None:
         location_accept_aliases=filters.get("location_accept_aliases"),
         allow_title_canada_signal=filters.get("allow_title_canada_signal", True),
         newgrad_title_rescue=filters.get("newgrad_title_rescue", True),
+        max_yoe_accept=int(filters.get("max_yoe_accept", 3)),
     )
     filtered = filter_jobs(
         new_jobs,
@@ -139,8 +154,21 @@ def run_once() -> None:
         **shared_kw,
     )
     deduped = _dedupe_jobs_by_company_title_url(filtered)
+    # Cross-run dedupe: never re-notify the same (company, normalized_title) pair.
+    fresh: list[dict] = []
+    fresh_keys: list[str] = []
+    for j in deduped:
+        key = _normalized_notify_key(j)
+        if not key or has_notified_key(key):
+            continue
+        fresh.append(j)
+        fresh_keys.append(key)
+    deduped = fresh
+    deduped = rank_jobs(deduped, location_priority=filters.get("location_priority"))
+    annotate_with_keywords(deduped)
     if deduped:
-        send_discord_new_jobs(deduped)
+        if send_discord_new_jobs(deduped):
+            remember_notified_keys(fresh_keys)
 
     # Tier B: core match (no JD / no recency) minus strict pass — optional second webhook
     if DISCORD_REVIEW_WEBHOOK_URL.strip():
@@ -169,6 +197,8 @@ def run_once() -> None:
             )
             not in strict_keys
         ]
+        review = rank_jobs(review, location_priority=filters.get("location_priority"))
+        annotate_with_keywords(review)
         if review:
             send_discord_review_jobs(review)
 

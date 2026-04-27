@@ -96,6 +96,11 @@ def load_filters() -> dict:
         "newgrad_title_rescue": filters.get(
             "newgrad_title_rescue", defaults["newgrad_title_rescue"]
         ),
+        "max_yoe_accept": int(filters.get("max_yoe_accept", defaults["max_yoe_accept"])),
+        "location_priority": _ensure_str_list(
+            filters.get("location_priority", defaults["location_priority"]),
+            defaults["location_priority"],
+        ),
     }
 
 
@@ -170,6 +175,16 @@ def _default_filters() -> dict:
         ],
         "allow_title_canada_signal": True,
         "newgrad_title_rescue": True,
+        "max_yoe_accept": 3,
+        "location_priority": [
+            "Toronto",
+            "Greater Toronto Area",
+            "GTA",
+            "Ontario",
+            "Remote - Canada",
+            "Canada Remote",
+            "Canada",
+        ],
     }
 
 

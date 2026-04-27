@@ -231,14 +231,16 @@ _JD_ANY_PROFESSIONAL_PATTERNS = [
     re.compile(r"\brelevant\s+professional\s+experience\b", re.I),
     re.compile(r"\bprior\s+professional\s+experience\b", re.I),
 ]
-# 3+ years generic (non-internship) → exclude. If match is near "intern/internship", allow.
-_JD_GENERIC_YOE_PATTERNS = [
-    re.compile(r"\b(1[0-9]|[3-9])\s*\+\s*years?\b", re.I),
-    re.compile(r"\b(1[0-9]|[3-9])\s*\+\s*yrs?\b", re.I),
-    re.compile(r"\bminimum\s+(1[0-9]|[3-9])\s*years?\b", re.I),
-    re.compile(r"\bat\s+least\s+(1[0-9]|[3-9])\s*years?\b", re.I),
-    re.compile(r"\b(1[0-9]|[3-9])\s*[-–]\s*(1[0-9]|[3-9])\s*\+?\s*years?\b", re.I),
-    re.compile(r"\b(1[0-9]|[3-9])\s*\+?\s*years?\s+of\s+(?:relevant\s+)?experience\b", re.I),
+# YOE patterns: each captures a numeric N. JD is rejected only when the captured N
+# exceeds ``max_yoe_accept`` (default 3 — accept "1+/2+/3+ years" by default; reject "4+ years").
+# Extracting the number lets us tune leniency without rewriting the regex set.
+_JD_YOE_PATTERNS = [
+    re.compile(r"\b(\d{1,2})\s*\+\s*years?\b", re.I),
+    re.compile(r"\b(\d{1,2})\s*\+\s*yrs?\b", re.I),
+    re.compile(r"\bminimum\s+(\d{1,2})\s*years?\b", re.I),
+    re.compile(r"\bat\s+least\s+(\d{1,2})\s*years?\b", re.I),
+    re.compile(r"\b(\d{1,2})\s*[-–]\s*(?:\d{1,2})\s*\+?\s*years?\b", re.I),
+    re.compile(r"\b(\d{1,2})\s*\+?\s*years?\s+of\s+(?:relevant\s+)?experience\b", re.I),
 ]
 # Unambiguous senior wording — no internship exception
 _JD_SENIOR_LEVEL_PATTERNS = [
@@ -256,11 +258,13 @@ def _jd_asks_senior_experience(
     description: str | None,
     *,
     include_professional_phrases: bool = True,
+    max_yoe_accept: int = 3,
 ) -> bool:
     """
-    Return True if the JD requires professional experience or 3+ years (generic).
+    Return True if the JD requires more experience than ``max_yoe_accept`` years
+    (default: accept up to 3+ years), or signals senior-level requirements.
     When include_professional_phrases is False (yoe_and_senior_only mode), skip boilerplate
-    "professional experience" patterns and only apply senior-level and 3+ year YOE heuristics.
+    "professional experience" patterns and only apply senior-level and YOE heuristics.
     """
     if not description or not isinstance(description, str) or len(description.strip()) < 50:
         return False
@@ -279,9 +283,15 @@ def _jd_asks_senior_experience(
                 if _JD_INTERNSHIP_CONTEXT.search(window):
                     continue  # e.g. "professional internship experience" or internship context
                 return True
-    for pat in _JD_GENERIC_YOE_PATTERNS:
-        m = pat.search(text_norm)
-        if m:
+    threshold = max(0, int(max_yoe_accept))
+    for pat in _JD_YOE_PATTERNS:
+        for m in pat.finditer(text_norm):
+            try:
+                yoe = int(m.group(1))
+            except (ValueError, IndexError):
+                continue
+            if yoe <= threshold:
+                continue  # within our accept window (e.g. "2+ years" when threshold is 3)
             start = max(0, m.start() - _JD_CONTEXT_WINDOW)
             end = min(len(text_norm), m.end() + _JD_CONTEXT_WINDOW)
             window = text_norm[start:end]
@@ -328,6 +338,7 @@ def filter_failure_reason(
     location_accept_aliases: list[str] | None = None,
     allow_title_canada_signal: bool = True,
     newgrad_title_rescue: bool = True,
+    max_yoe_accept: int = 3,
 ) -> str | None:
     """
     Return None if the job passes all filters; otherwise the first failing stage name.
@@ -386,7 +397,11 @@ def filter_failure_reason(
         desc = job.get("description") if isinstance(job.get("description"), str) else None
         prof = _jd_include_professional_phrases(jd_filter_mode)
         if not (newgrad_title_rescue and _title_signals_newgrad(title_dept)):
-            if _jd_asks_senior_experience(desc, include_professional_phrases=prof):
+            if _jd_asks_senior_experience(
+                desc,
+                include_professional_phrases=prof,
+                max_yoe_accept=max_yoe_accept,
+            ):
                 return "jd_experience"
 
     # --- Recency --------------------------------------------------------------
@@ -416,6 +431,7 @@ def passes_filters(
     location_accept_aliases: list[str] | None = None,
     allow_title_canada_signal: bool = True,
     newgrad_title_rescue: bool = True,
+    max_yoe_accept: int = 3,
 ) -> bool:
     """Return True if job passes all filters (new-grad only, no senior/staff, optional recency)."""
     return (
@@ -436,6 +452,7 @@ def passes_filters(
             location_accept_aliases=location_accept_aliases,
             allow_title_canada_signal=allow_title_canada_signal,
             newgrad_title_rescue=newgrad_title_rescue,
+            max_yoe_accept=max_yoe_accept,
         )
         is None
     )
@@ -458,6 +475,7 @@ def filter_jobs(
     location_accept_aliases: list[str] | None = None,
     allow_title_canada_signal: bool = True,
     newgrad_title_rescue: bool = True,
+    max_yoe_accept: int = 3,
 ) -> list[dict[str, Any]]:
     """Return only jobs that pass all filters (new-grad only, no senior, optional recency)."""
     # #region agent log
@@ -485,5 +503,6 @@ def filter_jobs(
             location_accept_aliases=location_accept_aliases,
             allow_title_canada_signal=allow_title_canada_signal,
             newgrad_title_rescue=newgrad_title_rescue,
+            max_yoe_accept=max_yoe_accept,
         )
     ]

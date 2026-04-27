@@ -59,7 +59,7 @@ def init_db() -> None:
                 new_jobs_count INTEGER DEFAULT 0
             );
         """)
-        # Migration: add posted_at if missing (existing DBs)
+        # Migration: add columns added in later versions to existing DBs.
         try:
             info = c.execute("PRAGMA table_info(jobs)").fetchall()
             columns = [row[1] for row in info]
@@ -67,8 +67,24 @@ def init_db() -> None:
                 c.execute("ALTER TABLE jobs ADD COLUMN posted_at TEXT")
             if "description" not in columns:
                 c.execute("ALTER TABLE jobs ADD COLUMN description TEXT")
+            if "applied_at" not in columns:
+                c.execute("ALTER TABLE jobs ADD COLUMN applied_at TEXT")
+            if "dismissed_at" not in columns:
+                c.execute("ALTER TABLE jobs ADD COLUMN dismissed_at TEXT")
+            if "notes" not in columns:
+                c.execute("ALTER TABLE jobs ADD COLUMN notes TEXT")
         except sqlite3.OperationalError:
             pass
+
+        # Cross-run dedupe: stable (company, normalized_title) keys we've already alerted.
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS notified_keys (
+                key TEXT PRIMARY KEY,
+                first_notified_at TEXT NOT NULL
+            )
+            """
+        )
 
 
 def _now() -> str:
@@ -148,17 +164,31 @@ def upsert_job(
         return row["id"], is_new
 
 
-def get_new_jobs_since(since: datetime) -> list[dict[str, Any]]:
-    """Return jobs where first_seen_at >= since, with company name joined."""
+_JOB_SELECT_COLUMNS = (
+    "j.id, j.company_id, j.external_id, j.title, j.location, j.department, j.url, "
+    "j.posted_at, j.description, j.first_seen_at, "
+    "j.applied_at, j.dismissed_at, j.notes, "
+    "c.name AS company_name, c.ats_type, c.board_id"
+)
+
+
+def get_new_jobs_since(since: datetime, *, exclude_handled: bool = True) -> list[dict[str, Any]]:
+    """Return jobs where first_seen_at >= since, with company info joined.
+
+    When exclude_handled is True (default), drop jobs already marked applied or dismissed
+    so we never re-notify on rows the user has already processed.
+    """
     since_str = since.isoformat()
+    where = "WHERE j.first_seen_at >= ?"
+    if exclude_handled:
+        where += " AND j.applied_at IS NULL AND j.dismissed_at IS NULL"
     with _conn() as c:
         rows = c.execute(
-            """
-            SELECT j.id, j.company_id, j.external_id, j.title, j.location, j.department, j.url,
-                   j.posted_at, j.description, j.first_seen_at, c.name AS company_name
+            f"""
+            SELECT {_JOB_SELECT_COLUMNS}
             FROM jobs j
             JOIN companies c ON c.id = j.company_id
-            WHERE j.first_seen_at >= ?
+            {where}
             ORDER BY j.first_seen_at DESC
             """,
             (since_str,),
@@ -166,23 +196,107 @@ def get_new_jobs_since(since: datetime) -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
-def get_jobs_first_seen_within_days(days: int) -> list[dict[str, Any]]:
+def get_jobs_first_seen_within_days(
+    days: int,
+    *,
+    exclude_handled: bool = False,
+) -> list[dict[str, Any]]:
     """Jobs whose first_seen_at is within the last `days` days (for filter breakdown / analytics)."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     since_str = cutoff.isoformat()
+    where = "WHERE j.first_seen_at >= ?"
+    if exclude_handled:
+        where += " AND j.applied_at IS NULL AND j.dismissed_at IS NULL"
     with _conn() as c:
         rows = c.execute(
-            """
-            SELECT j.id, j.company_id, j.external_id, j.title, j.location, j.department, j.url,
-                   j.posted_at, j.description, j.first_seen_at, c.name AS company_name
+            f"""
+            SELECT {_JOB_SELECT_COLUMNS}
             FROM jobs j
             JOIN companies c ON c.id = j.company_id
-            WHERE j.first_seen_at >= ?
+            {where}
             ORDER BY j.first_seen_at DESC
             """,
             (since_str,),
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+def _find_job_id_by_url(url: str) -> int | None:
+    """Locate a single jobs.id by exact URL match, with safe fallbacks.
+
+    1. Exact match on the supplied URL.
+    2. Exact match on the URL stripped of query/fragment (the upsert canonicalizes these out).
+    3. external_id-based lookup (jobs are upserted with ext_id derived from the URL too).
+    """
+    s = (url or "").strip()
+    if not s:
+        return None
+    bare = s.split("?", 1)[0].split("#", 1)[0].rstrip("/")
+    with _conn() as c:
+        for query, args in (
+            ("SELECT id FROM jobs WHERE url = ?", (s,)),
+            ("SELECT id FROM jobs WHERE url = ?", (bare,)),
+            ("SELECT id FROM jobs WHERE external_id = ?", (s,)),
+            ("SELECT id FROM jobs WHERE external_id = ?", (bare,)),
+        ):
+            row = c.execute(query, args).fetchone()
+            if row is not None:
+                return int(row["id"])
+    return None
+
+
+def mark_job(
+    *,
+    url: str | None = None,
+    job_id: int | None = None,
+    applied: bool = False,
+    dismissed: bool = False,
+    note: str | None = None,
+    clear: bool = False,
+) -> int:
+    """Tag a single job row with applied/dismissed/notes. Return the affected row id (-1 if missing)."""
+    target = job_id
+    if target is None and url:
+        target = _find_job_id_by_url(url)
+    if target is None:
+        return -1
+    now = _now() if not clear else None
+    sets: list[str] = []
+    args: list[Any] = []
+    if applied:
+        sets.append("applied_at = ?")
+        args.append(now)
+    if dismissed:
+        sets.append("dismissed_at = ?")
+        args.append(now)
+    if note is not None:
+        sets.append("notes = ?")
+        args.append(note if not clear else None)
+    if not sets:
+        return target
+    args.append(target)
+    with _conn() as c:
+        c.execute(f"UPDATE jobs SET {', '.join(sets)} WHERE id = ?", args)
+    return target
+
+
+def has_notified_key(key: str) -> bool:
+    if not key:
+        return False
+    with _conn() as c:
+        row = c.execute("SELECT 1 FROM notified_keys WHERE key = ?", (key,)).fetchone()
+    return row is not None
+
+
+def remember_notified_keys(keys: list[str]) -> None:
+    if not keys:
+        return
+    now = _now()
+    with _conn() as c:
+        c.executemany(
+            "INSERT OR IGNORE INTO notified_keys (key, first_notified_at) VALUES (?, ?)",
+            [(k, now) for k in keys if k],
+        )
 
 
 def start_run() -> int:

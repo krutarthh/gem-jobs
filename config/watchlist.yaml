@@ -82,7 +82,7 @@ companies:
     board_id: databricks
   - name: Snowflake
     careers_url: https://careers.snowflake.com/
-    ats_type: greenhouse
+    ats_type: ashby
     board_id: snowflake
   - name: Twilio
     careers_url: https://www.twilio.com/company/jobs
@@ -170,7 +170,7 @@ companies:
   # --- Canadian & Toronto-relevant ---
   - name: Wealthsimple
     careers_url: https://www.wealthsimple.com/en-ca/careers
-    ats_type: lever
+    ats_type: ashby
     board_id: wealthsimple
   - name: Bench
     careers_url: https://bench.co/careers/
@@ -178,6 +178,8 @@ companies:
     careers_url: https://www.touchbistro.com/careers/
   - name: Faire
     careers_url: https://www.faire.com/careers
+    ats_type: greenhouse
+    board_id: faire
   - name: Hootsuite
     careers_url: https://www.hootsuite.com/careers
   - name: Clio
@@ -231,6 +233,8 @@ companies:
     careers_url: https://www.mongodb.com/careers
   - name: Cockroach Labs
     careers_url: https://www.cockroachlabs.com/careers/
+    ats_type: greenhouse
+    board_id: cockroachlabs
   - name: PlanetScale
     careers_url: https://planetscale.com/careers
   - name: Neon
@@ -241,6 +245,8 @@ companies:
     careers_url: https://www.runwayml.com/careers
   - name: Perplexity
     careers_url: https://www.perplexity.ai/careers
+    ats_type: ashby
+    board_id: perplexity
   - name: Mistral AI
     careers_url: https://mistral.ai/careers/
   - name: Cohere
@@ -279,6 +285,8 @@ companies:
     careers_url: https://clear.co/careers
   - name: Hopper
     careers_url: https://hopper.com/careers
+    ats_type: ashby
+    board_id: hopper
   - name: Vendasta
     careers_url: https://www.vendasta.com/company/careers
   - name: Properly
@@ -309,6 +317,8 @@ companies:
     careers_url: https://www.fastly.com/careers
   - name: CircleCI
     careers_url: https://circleci.com/careers/
+    ats_type: greenhouse
+    board_id: circleci
   - name: Segment
     careers_url: https://segment.com/careers/
   - name: PagerDuty
@@ -339,12 +349,16 @@ companies:
     careers_url: https://www.nutanix.com/company/careers
   - name: Rubrik
     careers_url: https://www.rubrik.com/company/careers
+    ats_type: greenhouse
+    board_id: rubrik
   - name: Fortinet
     careers_url: https://www.fortinet.com/careers
   - name: Quora
     careers_url: https://www.quora.com/careers
   - name: IXL Learning
     careers_url: https://www.ixl.com/company/careers
+    ats_type: greenhouse
+    board_id: ixllearning
   - name: Zip
     careers_url: https://www.zip.co/careers/
   - name: Motive
@@ -384,13 +398,114 @@ companies:
     ats_type: greenhouse
     board_id: neo4j
 
-# Filter defaults — senior/staff/lead excluded; optional recency
+  # --- Toronto / Waterloo / Canada-friendly startups (Phase 1A roster) ---
+  - name: Tenstorrent
+    careers_url: https://tenstorrent.com/careers
+    ats_type: greenhouse
+    board_id: tenstorrent
+  - name: Mejuri
+    careers_url: https://mejuri.com/ca/en/careers
+    ats_type: greenhouse
+    board_id: mejuri
+  - name: DeepGenomics
+    careers_url: https://www.deepgenomics.com/careers/
+    ats_type: lever
+    board_id: deepgenomics
+  - name: EQ Bank
+    careers_url: https://www.equitablebank.ca/about-us/careers
+    ats_type: lever
+    board_id: eqbank
+  - name: Plotly
+    careers_url: https://plotly.com/careers/
+    ats_type: greenhouse
+    board_id: plotly
+  - name: ProteinQure
+    careers_url: https://www.proteinqure.com/careers/
+    ats_type: greenhouse
+    board_id: proteinqureinc
+  - name: BlueDot
+    careers_url: https://bluedot.global/careers/
+    ats_type: workable
+    board_id: bluedot-inc
+  - name: Float
+    careers_url: https://www.float.com/careers
+    ats_type: workable
+    board_id: floatjobs
+  - name: FusionAuth
+    careers_url: https://fusionauth.io/careers
+    ats_type: jazzhr
+    board_id: fusionauth
+  - name: Tailscale
+    careers_url: https://tailscale.com/careers
+  - name: Loopio
+    careers_url: https://www.loopio.com/careers/
+  - name: Q4 Inc
+    careers_url: https://www.q4inc.com/about/careers
+  - name: Vena Solutions
+    careers_url: https://vena.pinpointhq.com/
+  - name: FreshBooks
+    careers_url: https://www.freshbooks.com/careers
+  - name: Vidyard
+    careers_url: https://www.vidyard.com/careers/
+  - name: Achievers
+    careers_url: https://www.achievers.com/company/careers/
+  - name: Wattpad
+    careers_url: https://company.wattpad.com/careers
+  - name: Untether AI
+    careers_url: https://www.untether.ai/careers
+  - name: Ritual
+    careers_url: https://ritual.co/careers
+  - name: AlayaCare
+    careers_url: https://alayacare.com/careers/
+  - name: Helcim
+    careers_url: https://www.helcim.com/ca-en/careers/
+  - name: Symend
+    careers_url: https://www.symend.com/company/careers
+  - name: Cinchy
+    careers_url: https://cinchy.com/careers/
+  - name: Cyberhaven
+    careers_url: https://www.cyberhaven.com/company/careers
+  - name: Vector Institute
+    careers_url: https://vectorinstitute.ai/about/careers/
+  - name: Layer 6 AI
+    careers_url: https://layer6.ai/careers/
+  - name: Tucows
+    careers_url: https://tucows.com/careers/
+  - name: Knockri
+    careers_url: https://knockri.com/careers
+  - name: Drip
+    careers_url: https://www.drip.com/careers
+  - name: Ranovus
+    careers_url: https://ranovus.bamboohr.com/careers
+  - name: Drop
+    careers_url: https://www.earnwithdrop.com/careers
+
+# Filter defaults — tuned for Toronto SWE with 2 yrs co-op (new grad + Engineer I/II window)
 filters:
   entry_level_only: false
   use_jd_experience_filter: true
-  # Soften boilerplate "professional experience" noise; still flags 3+ YOE and senior-level JD phrasing
+  # Soften boilerplate "professional experience" noise; still flags senior-level JD phrasing.
   jd_filter_mode: yoe_and_senior_only
+  # Accept JD postings asking up to N years of experience (so "2+ years" still passes).
+  max_yoe_accept: 3
   require_location_field_match: false
+
+  # Used by the scoring/ranking engine (Phase 3A) to put Toronto-first.
+  location_priority:
+    - Toronto
+    - Greater Toronto Area
+    - GTA
+    - Mississauga
+    - Brampton
+    - Markham
+    - Vaughan
+    - North York
+    - Etobicoke
+    - Scarborough
+    - Ontario
+    - Remote - Canada
+    - Canada Remote
+    - Canada
   max_days_since_posted: 10
 
   locations:
@@ -485,6 +600,23 @@ filters:
     - 0-2 years
     - 0 years experience
     - no experience required
+    # --- 2 yrs co-op tier (Engineer II / 1-3 yr roles also fit) ---
+    - SWE II
+    - SWE 2
+    - Engineer II
+    - Engineer 2
+    - Software Engineer II
+    - Software Engineer 2
+    - Software Developer II
+    - Software Developer 2
+    - L4
+    - E4
+    - IC3
+    - 1+ years
+    - 2+ years
+    - 1-3 years
+    - 2-3 years
+    - 1-2 years
 
   title_keywords:
     - software
@@ -519,6 +651,8 @@ filters:
     - embedded
 
   exclude_keywords:
+    # Tuned for 2 yrs co-op: keep blocking real senior/staff roles and 4+ YoE bands.
+    # Engineer II / mid-level / l4 are NOT excluded (they fit a 2-yr-co-op profile).
     - senior
     - staff
     - principal
@@ -535,43 +669,41 @@ filters:
     - l5
     - l6
     - l7
-    - engineer ii
     - engineer iii
-    - engineer 2
     - engineer 3
-    - software engineer ii
+    - engineer iv
+    - engineer 4
     - software engineer iii
+    - software engineer 3
+    - software engineer iv
+    - software engineer 4
     - tech lead
-    # --- added ---
     - "sr "          # "Sr Engineer" without period
     - senior engineer
     - engineering manager
     - team lead
     - technical lead
-    - tech lead
     - solution architect
     - solutions architect
     - enterprise architect
-    - mid-level
-    - mid level
     - experienced engineer
-    - l4
-    - e4
     - e5
     - e6
     - e7
-    - ic4
     - ic5
     - ic6
-    - 3+ years
     - 4+ years
     - 5+ years
     - 6+ years
     - 7+ years
+    - 8+ years
     - 10+ years
-    - minimum 3 years
     - minimum 4 years
     - minimum 5 years
+    - minimum 6 years
+    - minimum 7 years
+    - minimum 8 years
+    - minimum 10 years
 
 # SQLite retention (keeps jobs.db small for GitHub Actions state branch / local runs)
 # GitHub rejects blobs > 100 MB; JD descriptions alone can push jobs.db over that limit.

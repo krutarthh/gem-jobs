@@ -11,7 +11,10 @@ EMBEDS_PER_MESSAGE = 10
 
 def _embed_for_job(job: dict[str, Any], *, review_queue: bool = False) -> dict[str, Any]:
     """Build a single Discord embed for one job."""
-    title = (job.get("title") or "Untitled")[:256]
+    raw_title = (job.get("title") or "Untitled").strip()
+    score = job.get("_score")
+    score_prefix = f"[{int(score):>2}] " if isinstance(score, (int, float)) else ""
+    title = (score_prefix + raw_title)[:256]
     url = job.get("url") or ""
     company = (job.get("company_name") or "").strip() or "Unknown"
     location = (job.get("location") or "").strip() or "—"
@@ -21,6 +24,23 @@ def _embed_for_job(job: dict[str, Any], *, review_queue: bool = False) -> dict[s
         {"name": "Location", "value": location[:1024], "inline": True},
         {"name": "Apply", "value": url[:1024] if url else "—", "inline": False},
     ]
+    keywords = job.get("_keywords")
+    if keywords:
+        if isinstance(keywords, list):
+            kw_value = ", ".join(str(k) for k in keywords[:5] if k)
+        else:
+            kw_value = str(keywords)
+        if kw_value:
+            fields.append({"name": "Mentions", "value": kw_value[:1024], "inline": False})
+    footer_bits: list[str] = []
+    ats_type = (job.get("ats_type") or "").strip()
+    if ats_type:
+        footer_bits.append(f"ATS={ats_type}")
+    if isinstance(score, (int, float)):
+        footer_bits.append(f"score={int(score)}")
+    posted_at = (job.get("posted_at") or "").strip()
+    if posted_at:
+        footer_bits.append(f"posted={posted_at[:10]}")
     if review_queue:
         fields.append(
             {
@@ -29,12 +49,15 @@ def _embed_for_job(job: dict[str, Any], *, review_queue: bool = False) -> dict[s
                 "inline": False,
             }
         )
-    return {
+    embed: dict[str, Any] = {
         "title": title,
         "url": url if url.startswith("http") else None,
         "color": color,
         "fields": fields,
     }
+    if footer_bits:
+        embed["footer"] = {"text": " · ".join(footer_bits)[:2048]}
+    return embed
 
 
 def send_discord_new_jobs(jobs: list[dict[str, Any]]) -> bool:

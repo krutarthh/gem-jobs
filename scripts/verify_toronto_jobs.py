@@ -73,6 +73,7 @@ def main() -> None:
             location_accept_aliases=filters.get("location_accept_aliases"),
             allow_title_canada_signal=filters.get("allow_title_canada_signal", True),
             newgrad_title_rescue=filters.get("newgrad_title_rescue", True),
+            max_yoe_accept=int(filters.get("max_yoe_accept", 3)),
         )
 
         total_fetched += len(jobs)

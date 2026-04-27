@@ -5,9 +5,12 @@ from src.ats.greenhouse import fetch_jobs as greenhouse_fetch
 from src.ats.lever import fetch_jobs as lever_fetch
 from src.ats.ashby import fetch_jobs as ashby_fetch
 from src.ats.generic import fetch_jobs as generic_fetch
+from src.ats.icims import fetch_jobs as icims_fetch
 from src.ats.jazzhr import fetch_jobs as jazzhr_fetch
+from src.ats.recruitee import fetch_jobs as recruitee_fetch
 from src.ats.smartrecruiters import fetch_jobs as smartrecruiters_fetch
 from src.ats.spa_lightpanda import fetch_jobs as spa_lightpanda_fetch
+from src.ats.workable import fetch_jobs as workable_fetch
 from src.ats.workday import fetch_jobs as workday_fetch
 
 
@@ -26,6 +29,14 @@ def fetch_jobs_for_company(ats_type: str, board_id: str | None, careers_url: str
         return workday_fetch(board_id)
     if ats_type == "smartrecruiters" and board_id:
         return smartrecruiters_fetch(board_id)
+    if ats_type == "recruitee" and board_id:
+        return recruitee_fetch(board_id)
+    if ats_type == "icims" and board_id:
+        jobs = icims_fetch(board_id)
+        return jobs if jobs else generic_fetch(careers_url)
+    if ats_type == "workable" and board_id:
+        jobs = workable_fetch(board_id)
+        return jobs if jobs else generic_fetch(careers_url)
     if ats_type == "jazzhr" and board_id:
         jobs = jazzhr_fetch(board_id)
         return jobs if jobs else generic_fetch(careers_url)

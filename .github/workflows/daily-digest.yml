@@ -1,0 +1,58 @@
+# Daily Toronto-first digest: posts top-K unapplied jobs once per day to a
+# dedicated Discord webhook. Uses the same state-db DB as the main scraper.
+
+name: Daily digest
+
+on:
+  schedule:
+    # 12:00 UTC = 8:00 ET (EDT). Runs once a day.
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-digest
+  cancel-in-progress: true
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Git LFS
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y git-lfs
+          git lfs install
+
+      - name: Restore DB from state branch (if exists)
+        env:
+          REPO_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        run: |
+          mkdir -p data
+          if git ls-remote --heads origin state-db 2>/dev/null | grep -q .; then
+            rm -rf .state-db-clone-tmp
+            git clone --depth 1 --branch state-db "$REPO_URL" .state-db-clone-tmp
+            cp .state-db-clone-tmp/data/jobs.db data/jobs.db || true
+            rm -rf .state-db-clone-tmp
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Post daily digest
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_REVIEW_WEBHOOK_URL: ${{ secrets.DISCORD_REVIEW_WEBHOOK_URL }}
+          DISCORD_DIGEST_WEBHOOK_URL: ${{ secrets.DISCORD_DIGEST_WEBHOOK_URL }}
+        run: python scripts/daily_digest.py --hours 24 --top 20
