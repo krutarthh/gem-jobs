@@ -449,6 +449,8 @@ companies:
     careers_url: https://www.vidyard.com/careers/
   - name: Achievers
     careers_url: https://www.achievers.com/company/careers/
+    ats_type: lever
+    board_id: achievers
   - name: Wattpad
     careers_url: https://company.wattpad.com/careers
   - name: Untether AI
@@ -479,6 +481,142 @@ companies:
     careers_url: https://ranovus.bamboohr.com/careers
   - name: Drop
     careers_url: https://www.earnwithdrop.com/careers
+
+  # --- Toronto-rooted hidden gems (Phase 1A round 2: Waabi, AV/AI/health/fintech) ---
+  - name: Waabi
+    careers_url: https://waabi.ai/careers
+    ats_type: lever
+    board_id: waabi
+  - name: Tali AI
+    careers_url: https://www.tali.ai/careers
+    ats_type: lever
+    board_id: 11855760-canada-inc
+  - name: Smile Digital Health
+    careers_url: https://www.smiledigitalhealth.com/careers
+    ats_type: lever
+    board_id: smiledigitalhealth
+  - name: Newton Crypto
+    careers_url: https://www.newton.co/careers
+    ats_type: lever
+    board_id: newton
+  - name: PolicyMe
+    careers_url: https://www.policyme.com/careers
+    ats_type: lever
+    board_id: policyme
+  - name: Zensurance
+    careers_url: https://www.zensurance.com/careers
+    ats_type: lever
+    board_id: zensurance
+  - name: Maple
+    careers_url: https://www.getmaple.ca/careers/
+    ats_type: lever
+    board_id: getmaple
+  - name: Mistplay
+    careers_url: https://www.mistplay.com/careers
+    ats_type: lever
+    board_id: mistplay
+  - name: Fullscript
+    careers_url: https://fullscript.com/careers
+    ats_type: lever
+    board_id: fullscript
+  - name: Paytm Labs
+    careers_url: https://paytmlabs.com/careers
+    ats_type: lever
+    board_id: paytm
+  - name: AutoTrader.ca
+    careers_url: https://www.autotrader.ca/about/careers
+    ats_type: greenhouse
+    board_id: autotradercanada
+  - name: Tubi (Canada)
+    careers_url: https://tubitv.com/careers
+    ats_type: greenhouse
+    board_id: tubi-canada
+  - name: Human Agency
+    careers_url: https://www.humanagency.com/careers
+    ats_type: greenhouse
+    board_id: humanagency
+  - name: Loop
+    careers_url: https://www.loopreturns.com/careers
+    ats_type: greenhouse
+    board_id: loop
+  - name: BitGo
+    careers_url: https://www.bitgo.com/careers/
+    ats_type: greenhouse
+    board_id: bitgo
+  - name: Varicent
+    careers_url: https://www.varicent.com/careers
+    ats_type: greenhouse
+    board_id: varicent
+  - name: StackAdapt
+    careers_url: https://www.stackadapt.com/careers
+    ats_type: greenhouse
+    board_id: stackadapt
+  - name: Klaviyo
+    careers_url: https://www.klaviyo.com/careers
+    ats_type: greenhouse
+    board_id: klaviyo
+  - name: Brex
+    careers_url: https://www.brex.com/careers
+    ats_type: greenhouse
+    board_id: brex
+  - name: Gusto
+    careers_url: https://gusto.com/about/careers
+    ats_type: greenhouse
+    board_id: gusto
+  - name: Knak
+    careers_url: https://www.knak.com/careers
+    ats_type: greenhouse
+    board_id: knak
+  - name: Tempo (YC)
+    careers_url: https://www.tempolabs.ai/careers
+    ats_type: ashby
+    board_id: tempo
+  - name: Bree
+    careers_url: https://www.bree.com/careers
+    ats_type: ashby
+    board_id: bree
+  - name: TILT
+    careers_url: https://www.tilttalent.com/careers
+    ats_type: ashby
+    board_id: tilt
+  - name: Gorgias
+    careers_url: https://www.gorgias.com/careers
+    ats_type: ashby
+    board_id: gorgias
+  - name: Nylas
+    careers_url: https://www.nylas.com/careers
+    ats_type: ashby
+    board_id: nylas
+  - name: Klue
+    careers_url: https://www.klue.com/careers
+    ats_type: ashby
+    board_id: klue
+  - name: Jane Software
+    careers_url: https://jane.app/careers
+    ats_type: ashby
+    board_id: jane
+  - name: Thinkific (Ashby)
+    careers_url: https://www.thinkific.com/careers/
+    ats_type: ashby
+    board_id: thinkific
+  - name: Stream (getstream.io)
+    careers_url: https://getstream.io/careers/
+    ats_type: ashby
+    board_id: stream
+  - name: OpenLoop
+    careers_url: https://openloophealth.com/careers
+    ats_type: ashby
+    board_id: openloophealth
+  - name: Unbounce
+    careers_url: https://unbounce.com/careers
+    ats_type: greenhouse
+    board_id: unbounce
+  - name: Voiceflow
+    careers_url: https://www.voiceflow.com/careers
+  - name: BorderPass
+    careers_url: https://www.borderpass.ai/careers
+  - name: Trexo Robotics
+    careers_url: https://www.trexorobotics.com/careers
 
 # Filter defaults — tuned for Toronto SWE with 2 yrs co-op (new grad + Engineer I/II window)
 filters:
