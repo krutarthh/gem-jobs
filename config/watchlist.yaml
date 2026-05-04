@@ -101,6 +101,10 @@ companies:
     careers_url: https://openai.com/careers
     ats_type: ashby
     board_id: openai
+  - name: LangChain
+    careers_url: https://www.langchain.com/careers
+    ats_type: ashby
+    board_id: langchain
   - name: Scale AI
     careers_url: https://scale.com/careers
     ats_type: greenhouse
