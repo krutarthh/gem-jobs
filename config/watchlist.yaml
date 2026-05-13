@@ -105,6 +105,10 @@ companies:
     careers_url: https://www.langchain.com/careers
     ats_type: ashby
     board_id: langchain
+  - name: Doppel
+    careers_url: https://jobs.ashbyhq.com/Doppel
+    ats_type: ashby
+    board_id: Doppel
   - name: Scale AI
     careers_url: https://scale.com/careers
     ats_type: greenhouse
