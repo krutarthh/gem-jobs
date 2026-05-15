@@ -9,7 +9,9 @@ Result = tuple[str, str | None]
 # Patterns: (regex, ats_type, group index)
 GREENHOUSE_PATTERNS = [
     (re.compile(r"boards\.greenhouse\.io/([^/?\"')\s]+)", re.I), "greenhouse", 1),
+    (re.compile(r"boards\.eu\.greenhouse\.io/([^/?\"')\s]+)", re.I), "greenhouse", 1),
     (re.compile(r"job-boards\.greenhouse\.io/([^/?\"')\s]+)", re.I), "greenhouse", 1),
+    (re.compile(r"job-boards\.eu\.greenhouse\.io/([^/?\"')\s]+)", re.I), "greenhouse", 1),
     (re.compile(r"jobvite\.com/[^/]+/job/[^/]+/([^/?]+)", re.I), "greenhouse", 1),
     (re.compile(r"greenhouse\.io/[^/]+/([^/?\"')\s]+)", re.I), "greenhouse", 1),
     (re.compile(r"boardToken['\"]?\s*[:=]\s*['\"]([^'\"]+)", re.I), "greenhouse", 1),
