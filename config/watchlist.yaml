@@ -109,6 +109,10 @@ companies:
     careers_url: https://jobs.ashbyhq.com/Doppel
     ats_type: ashby
     board_id: Doppel
+  - name: PolyAI
+    careers_url: https://poly.ai/careers
+    ats_type: greenhouse
+    board_id: polyai
   - name: Scale AI
     careers_url: https://scale.com/careers
     ats_type: greenhouse
