@@ -12,6 +12,7 @@ from urllib.parse import urlparse, urlunparse
 from src.config import DISCORD_REVIEW_WEBHOOK_URL, load_db_cleanup, load_filters, load_watchlist
 from src.db import (
     finish_run,
+    get_jobs_for_companies,
     get_new_jobs_since,
     has_notified_key,
     init_db,
@@ -88,6 +89,7 @@ def run_once() -> None:
     run_started = datetime.now(timezone.utc)
     companies_checked = 0
     new_count = 0
+    backfill_company_ids: list[int] = []
 
     for entry in companies:
         name = entry.get("name") or "Unknown"
@@ -95,12 +97,19 @@ def run_once() -> None:
         if not careers_url:
             continue
         ats_type, board_id = resolve_ats_for_entry(entry)
-        company_id = upsert_company(
+        company_id, ats_changed = upsert_company(
             name=name,
             careers_url=careers_url,
             ats_type=ats_type,
             board_id=board_id,
         )
+        if ats_changed:
+            backfill_company_ids.append(company_id)
+            print(
+                f"[info] ATS config changed for {name}: backfill alerts enabled "
+                f"(ats={ats_type or 'unknown'} board={board_id or '-'})",
+                flush=True,
+            )
         companies_checked += 1
         jobs = fetch_jobs_for_company(ats_type, board_id, careers_url)
         # Surface zero-job companies so CI logs catch silent watchlist rot.
@@ -130,6 +139,12 @@ def run_once() -> None:
                 new_count += 1
 
     new_jobs = get_new_jobs_since(run_started)
+    if backfill_company_ids:
+        seen_job_ids = {j["id"] for j in new_jobs}
+        for job in get_jobs_for_companies(backfill_company_ids):
+            if job["id"] not in seen_job_ids:
+                new_jobs.append(job)
+                seen_job_ids.add(job["id"])
     jd_mode = filters.get("jd_filter_mode", "standard")
     shared_kw = dict(
         locations=filters["locations"],

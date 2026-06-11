@@ -96,10 +96,18 @@ def upsert_company(
     careers_url: str,
     ats_type: str | None = None,
     board_id: str | None = None,
-) -> int:
-    """Insert or update company; return company id."""
+) -> tuple[int, bool]:
+    """Insert or update company; return (company id, ats_config_changed)."""
     now = _now()
     with _conn() as c:
+        existing = c.execute(
+            "SELECT id, ats_type, board_id FROM companies WHERE careers_url = ?",
+            (careers_url,),
+        ).fetchone()
+        if existing is None:
+            ats_changed = bool(ats_type and ats_type != "generic" and board_id)
+        else:
+            ats_changed = (existing["ats_type"] != ats_type) or (existing["board_id"] != board_id)
         c.execute(
             """
             INSERT INTO companies (name, careers_url, ats_type, board_id, created_at, updated_at)
@@ -116,7 +124,34 @@ def upsert_company(
             "SELECT id FROM companies WHERE careers_url = ?",
             (careers_url,),
         ).fetchone()
-        return row["id"]
+        return row["id"], ats_changed
+
+
+def get_jobs_for_companies(
+    company_ids: list[int],
+    *,
+    exclude_handled: bool = True,
+) -> list[dict[str, Any]]:
+    """All jobs for the given companies (used after ATS upgrades to backfill alerts)."""
+    ids = [i for i in company_ids if i]
+    if not ids:
+        return []
+    placeholders = ",".join("?" * len(ids))
+    where = f"WHERE j.company_id IN ({placeholders})"
+    if exclude_handled:
+        where += " AND j.applied_at IS NULL AND j.dismissed_at IS NULL"
+    with _conn() as c:
+        rows = c.execute(
+            f"""
+            SELECT {_JOB_SELECT_COLUMNS}
+            FROM jobs j
+            JOIN companies c ON c.id = j.company_id
+            {where}
+            ORDER BY j.first_seen_at DESC
+            """,
+            ids,
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 def upsert_job(

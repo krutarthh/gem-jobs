@@ -7,6 +7,7 @@ from typing import Any
 import requests
 
 from src.ats.detector import detect_ats, detect_ats_from_html
+from src.ats.greenhouse import discover_board
 
 REQUEST_TIMEOUT = 10
 _HEADERS = {"User-Agent": "GoldGemJobs/1.0"}
@@ -53,4 +54,11 @@ def resolve_ats_for_entry(entry: dict[str, Any]) -> tuple[str | None, str | None
                         ats_type, board_id = discovered_type, discovered_id
             except requests.RequestException:
                 pass
+        # Careers pages often hide Greenhouse embeds; probe the public JSON API.
+        if (ats_type == "generic" or not board_id) and not (
+            entry.get("ats_type") and entry.get("board_id")
+        ):
+            slug = discover_board(entry)
+            if slug:
+                ats_type, board_id = "greenhouse", slug
     return ats_type, board_id

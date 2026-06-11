@@ -1,7 +1,10 @@
 """Fetch jobs from Greenhouse Job Board API (public JSON)."""
 
-import requests
+import re
 from typing import Any
+from urllib.parse import urlparse
+
+import requests
 
 TIMEOUT = 15
 
@@ -84,6 +87,58 @@ def _fetch_from_base(api_base: str, board_token: str) -> list[JobDict]:
         return []
     jobs = data.get("jobs") or []
     return [_normalize_job(j) for j in jobs if isinstance(j, dict)]
+
+
+def guess_board_slugs(entry: dict[str, Any]) -> list[str]:
+    """Heuristic Greenhouse board tokens from watchlist name / careers host."""
+    slugs: list[str] = []
+    seen: set[str] = set()
+
+    def add(raw: str | None) -> None:
+        s = (raw or "").strip().lower()
+        if not s or len(s) < 2 or s in seen:
+            return
+        seen.add(s)
+        slugs.append(s)
+
+    if entry.get("board_id"):
+        add(str(entry["board_id"]))
+    name = (entry.get("name") or "").split("(")[0].split("|")[0].strip()
+    if name:
+        add(re.sub(r"[^a-z0-9]", "", name.lower()))
+        add(name.lower().replace(" ", ""))
+    host = urlparse((entry.get("careers_url") or "").strip()).netloc.lower()
+    if host.startswith("www."):
+        host = host[4:]
+    if host:
+        base = host.split(".")[0]
+        if base not in {"jobs", "careers", "apply", "job-boards"}:
+            add(base)
+    return slugs
+
+
+def board_has_jobs(board_token: str) -> bool:
+    """Lightweight probe: True if either regional Greenhouse API lists jobs."""
+    token = (board_token or "").strip()
+    if not token:
+        return False
+    for base in _GREENHOUSE_API_BASES:
+        url = f"{base}/boards/{token}/jobs"
+        try:
+            r = requests.get(url, timeout=5)
+            if r.ok and (r.json().get("jobs") or []):
+                return True
+        except (requests.RequestException, ValueError):
+            continue
+    return False
+
+
+def discover_board(entry: dict[str, Any]) -> str | None:
+    """Return a Greenhouse board token when a public API responds with jobs."""
+    for slug in guess_board_slugs(entry):
+        if board_has_jobs(slug):
+            return slug
+    return None
 
 
 def fetch_jobs(board_token: str) -> list[JobDict]:
