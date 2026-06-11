@@ -449,6 +449,8 @@ companies:
     board_id: fusionauth
   - name: Tailscale
     careers_url: https://tailscale.com/careers
+    ats_type: greenhouse
+    board_id: tailscale
   - name: Loopio
     careers_url: https://www.loopio.com/careers/
   - name: Q4 Inc
