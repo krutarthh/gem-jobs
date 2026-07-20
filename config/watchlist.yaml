@@ -285,6 +285,10 @@ companies:
     careers_url: https://lambdalabs.com/careers
   - name: Together AI
     careers_url: https://www.together.ai/careers
+  - name: Baseten
+    careers_url: https://www.baseten.co/resources/careers/
+    ats_type: ashby
+    board_id: baseten
 
   # --- More Canadian fintech & tech ---
   - name: KOHO
