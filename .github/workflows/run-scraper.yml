@@ -5,7 +5,7 @@ name: Run scraper every 15 min
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '0 */12 * * *'
   workflow_dispatch:
 
 # Needed to push updated DB to a state branch
