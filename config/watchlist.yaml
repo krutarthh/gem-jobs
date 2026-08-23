@@ -866,9 +866,9 @@ filters:
 db_cleanup:
   enabled: true
   # Drop job rows not refreshed by a scrape in this many days (closed / stale listings)
-  delete_jobs_last_seen_older_than_days: 60
+  delete_jobs_last_seen_older_than_days: 20
   # Trim run history (optional; set null to never delete runs)
-  delete_runs_older_than_days: 180
+  delete_runs_older_than_days: 18
   # Remove company rows with no job rows after the job purge
   delete_orphan_companies: true
   # Clear stored job descriptions after each run (refetched next scrape for live postings)
